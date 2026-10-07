@@ -1,0 +1,16 @@
+{
+  "name": "Aastha Van Portal",
+  "short_name": "AasthaVan",
+  "description": "Aastha Van utility portal with reusable UI components and bilingual support.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f8fb",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

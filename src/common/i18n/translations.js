@@ -1,0 +1,52 @@
+export const translations = {
+  en: {
+    appTitle: "Aastha Van Portal",
+    dashboardTitle: "Common components dashboard",
+    languageLabel: "Language",
+    nameLabel: "Full name",
+    phoneLabel: "Phone number",
+    emailLabel: "Email address",
+    genderLabel: "Gender",
+    interestsLabel: "Interests",
+    notesLabel: "Notes",
+    imageUploadLabel: "Upload image",
+    documentUploadLabel: "Upload document",
+    selectLabel: "Select category",
+    submitButton: "Save details",
+    pwaPromptTitle: "Install app",
+    pwaPromptText: "Add this application to your home screen for a faster, app-like experience.",
+    installButton: "Install",
+    carouselTitle: "Featured highlights",
+    chartTitle: "Monthly analytics",
+    choosePlaceholder: "Choose an option",
+    imagePlaceholder: "Drag and drop or browse",
+    documentPlaceholder: "Upload PDF or image",
+    toastMessage: "Form saved successfully"
+  },
+  hi: {
+    appTitle: "आस्था वन पोर्टल",
+    dashboardTitle: "कॉमन कंपोनेंट्स डैशबोर्ड",
+    languageLabel: "भाषा",
+    nameLabel: "पूरा नाम",
+    phoneLabel: "फोन नंबर",
+    emailLabel: "ईमेल पता",
+    genderLabel: "लिंग",
+    interestsLabel: "रूचियां",
+    notesLabel: "नोट्स",
+    imageUploadLabel: "इमेज अपलोड करें",
+    documentUploadLabel: "दस्तावेज अपलोड करें",
+    selectLabel: "श्रेणी चुनें",
+    submitButton: "विवरण सेव करें",
+    pwaPromptTitle: "ऐप इंस्टॉल करें",
+    pwaPromptText: "तेज़ और ऐप जैसी अनुभव के लिए इस एप्लिकेशन को होम स्क्रीन में जोड़ें।",
+    installButton: "इंस्टॉल करें",
+    carouselTitle: "विशेष हाइलाइट्स",
+    chartTitle: "मासिक एनालिटिक्स",
+    choosePlaceholder: "ऑप्शन चुनें",
+    imagePlaceholder: "ड्रैग करें या ब्राउज़ करें",
+    documentPlaceholder: "PDF या इमेज अपलोड करें",
+    toastMessage: "फॉर्म सफलतापूर्वक सेव हुआ"
+  }
+};
+
+export const getLocaleContent = (locale = "en") => translations[locale] ?? translations.en;
