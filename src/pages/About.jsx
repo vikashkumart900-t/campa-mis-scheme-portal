@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translations } from "../i18n";
+import Leadership from "./Leadership.jsx";
 
 function About() {
   const { language } = useLanguage();
@@ -32,7 +33,7 @@ function About() {
       </section>
 
 
-      <section className="content-page">
+      <section className="content-page about-content">
 
         <h2>
           {translations[language].aboutPortalTitle}
@@ -51,7 +52,7 @@ function About() {
         </p>
 
       </section>
-
+      <Leadership />
 
       <Footer />
 

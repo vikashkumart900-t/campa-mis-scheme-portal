@@ -1096,7 +1096,7 @@
 
   color: white;
 
-  padding: 55px 10%;
+  padding: 5px 10%;
 
   text-align: center;
 }
@@ -1272,233 +1272,657 @@
 /* ================================
    LOGIN
 ================================ */
+/* ================================
+   LOGIN
+================================ */
+/* ================================
+   LOGIN
+================================ */
 
 .login-page {
-  min-height: 600px;
-
+  min-height: 620px;
   display: flex;
-
   justify-content: center;
-
   align-items: center;
+  padding: 56px 20px;
+  background: #f3f5f4;
 }
 
 .login-box {
-  width: 420px;
-
-  background: white;
-
-  padding: 35px;
-
-  border-radius: 10px;
-
-  box-shadow:
-    0 5px 25px rgba(0, 0, 0, 0.12);
+  width: min(420px, 100%);
+  background: #fff;
+  padding: 34px 36px 30px;
+  border: 1px solid #d5dbd7;
+  border-top: 4px solid #176d2c;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .login-box h1 {
-  color: #176d2c;
-
-  text-align: center;
+  margin: 0;
+  text-align: left;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1b3a24;
 }
 
 .login-box > p {
-  color: #777;
-
-  text-align: center;
-
-  margin: 8px 0 25px;
+  margin: 6px 0 22px;
+  padding-bottom: 16px;
+  text-align: left;
+  font-size: 13.5px;
+  color: #5f6b64;
+  border-bottom: 1px solid #e4e9e6;
 }
 
 .login-box label {
   display: block;
-
-  margin-top: 15px;
-
-  margin-bottom: 6px;
-
-  font-weight: bold;
-
+  margin: 16px 0 6px;
   font-size: 13px;
+  font-weight: 600;
+  color: #2b3a31;
 }
 
 .login-box input,
 .login-box select {
   width: 100%;
+  padding: 11px 12px;
+  font-size: 14px;
+  color: #1f2d23;
+  background: #fff;
+  border: 1px solid #b9c3bc;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
 
-  padding: 12px;
+.login-box input::placeholder {
+  color: #8d9a92;
+}
 
-  border: 1px solid #ccc;
+.login-box input:focus,
+.login-box select:focus {
+  border-color: #176d2c;
+  box-shadow: 0 0 0 2px rgba(23, 109, 44, 0.18);
+}
 
-  border-radius: 5px;
+.login-box select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23444' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
 }
 
 .login-box button {
   width: 100%;
-
-  margin-top: 25px;
-
+  margin-top: 24px;
   padding: 12px;
-
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #fff;
   background: #176d2c;
+  border: 1px solid #12591f;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
 
-  color: white;
+.login-box button:hover {
+  background: #12591f;
+}
 
-  border: none;
-
-  border-radius: 5px;
-
-  font-weight: bold;
+.login-box button:focus-visible {
+  outline: 2px solid #f58200;
+  outline-offset: 2px;
 }
 
 .login-box a {
   display: block;
-
-  text-align: center;
-
-  margin-top: 15px;
-
-  color: #176d2c;
+  width: fit-content;
+  margin: 16px 0 0 auto;      /* right side mein */
+  font-size: 13px;
+  color: #17649b;
+  text-decoration: none;
 }
 
+.login-box a:hover {
+  text-decoration: underline;
+}
 
+/* Neeche chhoti official line */
+.login-box::after {
+  content: "Authorized users only. All activity is monitored.";
+  display: block;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid #e4e9e6;
+  font-size: 11.5px;
+  color: #77837b;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .login-box { padding: 28px 20px 24px; }
+}
+
+/* ================================
+   FOOTER
+================================ */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 /* ================================
    FOOTER
 ================================ */
 
 .footer {
-  background: #064d18;
-
+  position: relative;
+  overflow: hidden;
+  background: #064d18;          /* video load hone tak yahi color dikhega */
   color: white;
-
-  padding-top: 45px;
+  padding-top: 50px;
+  font-family: "Poppins", sans-serif;
 }
 
+/* Video */
+.footer-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Green overlay: text saaf padhne ke liye, color same rahega */
+.footer-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to bottom,
+    rgba(6, 77, 24, 0.88) 0%,
+    rgba(6, 77, 24, 0.72) 60%,
+    rgba(6, 77, 24, 0.55) 100%
+  );
+}
+
+/* ---------- Content ---------- */
+
 .footer-container {
+  position: relative;
+  z-index: 3;
   width: 90%;
   max-width: 1200px;
-
   margin: auto;
-
   display: grid;
-
   grid-template-columns: 2fr 1fr 1.5fr;
-
   gap: 50px;
+  padding-bottom: 50px;
 }
 
 .footer-column {
   display: flex;
-
   flex-direction: column;
-
-  gap: 10px;
+  gap: 12px;
 }
 
 .footer-column h3 {
-  color: #ff9000;
+  position: relative;
+  color: #ffa51f;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
 
-  margin-bottom: 10px;
+.footer-column h3::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 46px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ff9000, #ffd27a);
 }
 
 .footer-column p {
-  color: #d9e8da;
-
-  line-height: 1.6;
-
-  font-size: 14px;
+  color: #eaf5eb;
+  line-height: 1.75;
+  font-size: 14.5px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 .footer-column a {
-  color: white;
-
+  position: relative;
+  width: fit-content;
+  color: #fff;
   text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  transition: transform 0.25s ease, color 0.25s ease;
+}
 
-  font-size: 14px;
+.footer-column a::before {
+  content: "›";
+  position: absolute;
+  left: -14px;
+  opacity: 0;
+  color: #ffa51f;
+  transition: opacity 0.25s ease;
+}
+
+.footer-column a:hover {
+  color: #ffc766;
+  transform: translateX(12px);
+}
+
+.footer-column a:hover::before {
+  opacity: 1;
 }
 
 .copyright {
-  margin-top: 35px;
-
-  padding: 20px;
-
+  position: relative;
+  z-index: 3;
+  padding: 16px 20px;
   text-align: center;
-
-  border-top: 1px solid rgba(255,255,255,0.2);
-
-  font-size: 12px;
+  font-size: 12.5px;
+  letter-spacing: 0.3px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(3px);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-
-/* ================================
-   RESPONSIVE
-================================ */
-
+/* Motion kam karne wale users ke liye video band */
+@media (prefers-reduced-motion: reduce) {
+  .footer-video { display: none; }
+}
 @media (max-width: 900px) {
-
-  .main-header {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .scheme-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .statistics {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .footer-container {
-    grid-template-columns: 1fr;
-  }
-
+  .footer-container { grid-template-columns: 1fr; gap: 35px; }
+  .scheme-grid { grid-template-columns: 1fr 1fr; }
+  .statistics  { grid-template-columns: 1fr 1fr; }
+  .main-header { flex-direction: column; gap: 15px; }
 }
-
 
 @media (max-width: 600px) {
+  .header-left { flex-wrap: wrap; justify-content: center; }
+  .portal-title h1 { font-size: 20px; }
+  .nav-links a { padding: 0 8px; font-size: 11px; }
+  .login-button { padding: 7px 9px; font-size: 11px; }
 
-  .header-left {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+  .scheme-grid { grid-template-columns: 1fr; }
+  .statistics  { grid-template-columns: 1fr; }
+  .manual-card { flex-direction: column; text-align: center; }
+}
 
-  .portal-title h1 {
-    font-size: 20px;
-  }
+/* ================================
+   LEADERSHIP
+================================ */
 
-  .nav-links a {
-    padding: 0 8px;
+.leadership {
+  width: 90%;
+  max-width: 1100px;
+  margin: 10px auto 70px;
+}
 
-    font-size: 11px;
-  }
+.leadership-head {
+  text-align: center;
+  margin-bottom: 34px;
+}
 
-  .login-button {
-    padding: 7px 9px;
+.leadership-head span {
+  display: block;
+  color: #f58200;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
 
-    font-size: 11px;
-  }
+.leadership-head h2 {
+  margin: 8px 0 0;
+  color: #176d2c;
+  font-size: 30px;
+}
 
-  .hero {
-    height: 430px;
-  }
+.leadership-head h2::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 3px;
+  margin: 12px auto 0;
+  background: #f58200;
+}
 
-  .hero-content h1 {
-    font-size: 32px;
-  }
+/* Group box: upar green patti, jaise official portal */
+.leader-group {
+  background: #fff;
+  border: 1px solid #d5dbd7;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
 
-  .scheme-grid {
+.leader-group-title {
+  margin: 0;
+  padding: 12px 20px;
+  background: #0a9a1a;
+  background: #176d2c;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.leader-row {
+  display: grid;
+  gap: 24px;
+  padding: 28px 24px;
+}
+
+.leader-row.ministers {
+  grid-template-columns: repeat(2, minmax(0, 360px));
+  justify-content: center;
+  gap: 50px;
+}
+
+.leader-row.officials {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Card */
+.leader-card {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid #e4e9e6;
+  border-left: 4px solid #f58200;
+  background: #fafcfb;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.leader-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(23, 109, 44, 0.14);
+}
+
+.leader-card.large {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-left: 1px solid #e4e9e6;
+  border-top: 4px solid #f58200;
+  padding: 26px 22px;
+}
+
+/* Photo */
+.leader-photo {
+  flex-shrink: 0;
+  width: 84px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #dfeee3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.leader-photo.large {
+  width: 120px;
+  height: 140px;
+  border-radius: 10px;
+}
+
+.leader-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* Photo na mile to initials */
+.leader-photo span {
+  font-size: 26px;
+  font-weight: 700;
+  color: #176d2c;
+}
+
+/* Text */
+.leader-info h4 {
+  margin: 0 0 8px;
+  font-size: 16.5px;
+  color: #12281a;
+}
+
+.leader-info p {
+  margin: 0 0 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #4b5a51;
+}
+
+.leader-card.large .leader-info h4 {
+  font-size: 18px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .leader-row.officials {
     grid-template-columns: 1fr;
   }
-
-  .statistics {
+  .leader-row.ministers {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
+}
 
-  .manual-card {
+@media (max-width: 480px) {
+  .leader-card:not(.large) {
     flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border-left: 1px solid #e4e9e6;
+    border-top: 4px solid #f58200;
+  }
+}
 
+/* ================================
+   LEADERSHIP
+================================ */
+/* ================================
+   LEADERSHIP (compact)
+================================ */
+
+.about-content {
+  min-height: 0;
+  margin-bottom: 20px;
+}
+
+.leadership {
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto 50px;
+}
+
+.leadership-head {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.leadership-head span {
+  display: block;
+  color: #f58200;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.leadership-head h2 {
+  margin: 4px 0 0;
+  color: #176d2c;
+  font-size: 24px;
+}
+
+.leadership-head h2::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 3px;
+  margin: 8px auto 0;
+  background: #f58200;
+}
+
+/* Group heading: text + patli line */
+.leader-group-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 0;
+  background: none;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #176d2c;
+}
+
+.leader-group-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #cddbd1;
+}
+
+/* Photo */
+.leader-photo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(#e6f2ea, #cfe3d6);
+  color: #86b395;
+  border-radius: 5px;
+}
+
+.leader-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.leader-photo svg {
+  width: 55%;
+  height: 55%;
+}
+
+/* Text */
+.leader-info h4 {
+  margin: 0 0 5px;
+  color: #12281a;
+  font-weight: 700;
+}
+
+.leader-info p {
+  margin: 0 0 3px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #4b5a51;
+}
+
+/* ---------- Ministers ---------- */
+
+.minister-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.minister-card {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  background: #fff;
+  border-top: 3px solid #176d2c;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.minister-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(23, 109, 44, 0.15);
+}
+
+.minister-card .leader-photo {
+  width: 84px;
+  height: 104px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.minister-card .leader-info h4 {
+  font-size: 16px;
+}
+
+/* ---------- Officials ---------- */
+
+.official-list {
+  background: #fff;
+  border-top: 3px solid #176d2c;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.official-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e6ece8;
+  transition: background 0.2s ease;
+}
+
+.official-row:last-child {
+  border-bottom: none;
+}
+
+.official-row:hover {
+  background: #f6faf7;
+}
+
+.official-row .leader-photo {
+  width: 58px;
+  height: 72px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+}
+
+.official-row .leader-info h4 {
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+/* ---------- Responsive (neeche hi rehne do) ---------- */
+
+@media (max-width: 800px) {
+  .minister-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .minister-card,
+  .official-row {
+    flex-direction: column;
     text-align: center;
   }
-
 }
