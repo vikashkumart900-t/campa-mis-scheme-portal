@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    appTitle: "Aastha Van Portal",
+    appTitle: "Scheme MIS Portal",
     dashboardTitle: "Common components dashboard",
     languageLabel: "Language",
     nameLabel: "Full name",
@@ -24,7 +24,7 @@ export const translations = {
     toastMessage: "Form saved successfully"
   },
   hi: {
-    appTitle: "आस्था वन पोर्टल",
+    appTitle: "स्कीम MIS पोर्टल",
     dashboardTitle: "कॉमन कंपोनेंट्स डैशबोर्ड",
     languageLabel: "भाषा",
     nameLabel: "पूरा नाम",

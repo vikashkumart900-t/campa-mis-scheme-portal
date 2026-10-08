@@ -1,18 +1,15 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
-import {
-  Carousel,
-  ChartPanel,
-  DocumentUpload,
-  ImageUpload,
-  MultiSelect,
-  PwaPrompt,
-  RadioGroup,
-  Select,
-  TextArea,
-  TextInput
-} from "./common/components";
+import Carousel from "./common/components/Carousel";
+import DocumentUpload from "./common/components/DocumentUpload";
+import ImageUpload from "./common/components/ImageUpload";
+import MultiSelect from "./common/components/MultiSelect";
+import PwaPrompt from "./common/components/PwaPrompt";
+import RadioGroup from "./common/components/RadioGroup";
+import Select from "./common/components/Select";
+import TextArea from "./common/components/TextArea";
+import TextInput from "./common/components/TextInput";
 import { getLocaleContent } from "./common/i18n";
 
 import Home from "./pages/Home";
@@ -20,6 +17,8 @@ import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import UserManual from "./pages/UserManual";
 import Login from "./pages/Login";
+
+const ChartPanel = lazy(() => import("./common/components/ChartPanel"));
 
 const categoryOptions = [
   { value: "hospitality", label: "Hospitality" },
@@ -204,7 +203,9 @@ function CommonDemo() {
       </form>
 
       <div className="dashboard-grid">
-        <ChartPanel title={strings.chartTitle} type="bar" data={chartData} />
+        <Suspense fallback={<div className="chart-panel">{strings.chartTitle}</div>}>
+          <ChartPanel title={strings.chartTitle} type="bar" data={chartData} />
+        </Suspense>
         <Carousel slides={slides} />
       </div>
     </div>
@@ -220,7 +221,7 @@ function App() {
       <Route path="/about" element={<About />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/user-manual" element={<UserManual />} />
-      <Route path="/signin" element={<Login />} />
+      <Route path="/signin" element={<><Home /><Login /></>} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
