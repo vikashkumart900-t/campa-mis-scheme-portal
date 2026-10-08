@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translateText, translations } from "../i18n";
@@ -9,20 +9,59 @@ import wildBuffaloImage from "../assets/wild_bufaalo.jpg";
 import rhinoImage from "../assets/rhino image.jpg";
 
 const userTypes = ["implementingAgency", "programDivision", "nationalAuthority", "hod"];
+const registerableUserTypes = ["implementingAgency", "programDivision"];
 
 function createCaptcha() {
-  const firstNumber = Math.floor(Math.random() * 9) + 1;
-  const secondNumber = Math.floor(Math.random() * 9) + 1;
-  const addition = Math.random() >= 0.5;
-  const [left, right] = addition || firstNumber >= secondNumber
-    ? [firstNumber, secondNumber]
-    : [secondNumber, firstNumber];
-  const operator = addition ? "+" : "-";
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const answer = Array.from(
+    { length: 5 },
+    () => alphabet[Math.floor(Math.random() * alphabet.length)]
+  ).join("");
 
-  return {
-    question: `${left} ${operator} ${right}`,
-    answer: addition ? left + right : left - right
-  };
+  return { question: answer, answer };
+}
+
+function drawCaptcha(canvas, text) {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+
+  const width = canvas.width;
+  const height = canvas.height;
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, width, height);
+
+  for (let i = 0; i < 100; i += 1) {
+    context.fillStyle = i % 3 === 0 ? "rgba(220, 38, 38, 0.58)" : "rgba(15, 23, 42, 0.35)";
+    context.beginPath();
+    context.arc(Math.random() * width, Math.random() * height, Math.random() * 1.4 + 0.4, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  for (let i = 0; i < 5; i += 1) {
+    context.strokeStyle = "rgba(220, 38, 38, 0.72)";
+    context.lineWidth = 1 + Math.random();
+    context.beginPath();
+    context.moveTo(Math.random() * width, Math.random() * height);
+    context.lineTo(Math.random() * width, Math.random() * height);
+    context.stroke();
+  }
+
+  context.font = "bold 30px Georgia, serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  [...text].forEach((character, index) => {
+    const x = 30 + index * 60;
+    const y = height / 2 + (Math.random() - 0.5) * 12;
+    context.save();
+    context.translate(x, y);
+    context.rotate((Math.random() - 0.5) * 0.5);
+    context.fillStyle = "#111827";
+    context.fillText(character, 0, 0);
+    context.restore();
+  });
 }
 
 function Login() {
@@ -37,8 +76,15 @@ function Login() {
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [captchaError, setCaptchaError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const captchaCanvasRef = useRef(null);
   const t = (key) => translateText(key, language);
   const userTypeLabel = userType ? translations[language][userType] : "";
+
+  useEffect(() => {
+    if (captchaCanvasRef.current) {
+      drawCaptcha(captchaCanvasRef.current, captcha.answer);
+    }
+  }, [captcha]);
 
   const closeLogin = () => navigate("/login");
 
@@ -51,7 +97,7 @@ function Login() {
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (!captchaAnswer.trim() || Number(captchaAnswer) !== captcha.answer) {
+    if (captchaAnswer.trim().toUpperCase() !== captcha.answer) {
       setCaptchaError(t("captchaError"));
       setCaptcha(createCaptcha());
       setCaptchaAnswer("");
@@ -160,24 +206,33 @@ function Login() {
                   <label className="visually-hidden" htmlFor="captcha-answer">
                     {t("captchaLabel")}
                   </label>
-                  <input
-                    className="login-modal-input"
-                    id="captcha-answer"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    placeholder={t("captchaAnswerPlaceholder")}
-                    value={captchaAnswer}
-                    onChange={(event) => {
-                      setCaptchaAnswer(event.target.value);
-                      setCaptchaError("");
-                    }}
-                    aria-describedby={captchaError ? "captcha-error" : undefined}
-                    aria-invalid={Boolean(captchaError)}
-                    required
-                  />
-                  <div className="login-captcha-challenge" aria-live="polite">
-                    {captcha.question} = ?
+                  <div className="login-captcha-entry">
+                    <input
+                      className="login-modal-input"
+                      id="captcha-answer"
+                      type="text"
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      spellCheck="false"
+                      placeholder={t("captchaAnswerPlaceholder")}
+                      value={captchaAnswer}
+                      onChange={(event) => {
+                        setCaptchaAnswer(event.target.value);
+                        setCaptchaError("");
+                      }}
+                      aria-describedby={captchaError ? "captcha-error" : undefined}
+                      aria-invalid={Boolean(captchaError)}
+                      required
+                    />
+                    <canvas
+                      className="login-captcha-challenge"
+                      ref={captchaCanvasRef}
+                      width="300"
+                      height="92"
+                      role="img"
+                      aria-label={`CAPTCHA characters: ${captcha.answer}`}
+                      aria-live="polite"
+                    />
                   </div>
                   <button
                     className="login-captcha-refresh"
@@ -197,9 +252,11 @@ function Login() {
                 <button className="login-submit" type="submit">
                   {t("loginNow")}
                 </button>
-                <p className="login-register-prompt">
-                  {t("noAccount")} <a href="#register">{t("registerNow")}</a>
-                </p>
+                {registerableUserTypes.includes(userType) && (
+                  <p className="login-register-prompt">
+                    {t("noAccount")} <a href="#register">{t("registerNow")}</a>
+                  </p>
+                )}
               </>
             )}
           </form>

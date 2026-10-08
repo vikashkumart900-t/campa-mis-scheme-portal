@@ -142,7 +142,7 @@ export const translations = {
     selectUserType: "Select User Type",
     implementingAgency: "Implementing Agency",
     programDivision: "Program Division",
-    nationalAuthority: "National Authority CAMPA",
+    nationalAuthority: "National Authority , CAMPA",
     hod: "HOD",
     username: "Username",
     enterUsername: "Enter Username",
