@@ -17,6 +17,7 @@ import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import UserManual from "./pages/UserManual";
 import Login from "./pages/Login";
+import UserDashboard from "./pages/UserDashboard";
 
 const ChartPanel = lazy(() => import("./common/components/ChartPanel"));
 
@@ -221,6 +222,7 @@ function App() {
       <Route path="/about" element={<About />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/user-manual" element={<UserManual />} />
+      <Route path="/dashboard/:userType" element={<UserDashboard />} />
       <Route path="/signin" element={<><Home /><Login /></>} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

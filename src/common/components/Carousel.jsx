@@ -91,19 +91,6 @@ export default function Carousel({
 
       </div>
 
-      {/* Slide counter */}
-      <div className="hero-counter">
-        <span>
-          {String(activeIndex + 1).padStart(2, "0")}
-        </span>
-
-        <i />
-
-        <span className="counter-total">
-          {String(slides.length).padStart(2, "0")}
-        </span>
-      </div>
-
       {/* Navigation */}
       <div className="hero-navigation">
 

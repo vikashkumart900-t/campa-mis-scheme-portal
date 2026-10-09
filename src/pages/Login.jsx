@@ -12,12 +12,27 @@ const userTypes = ["implementingAgency", "programDivision", "nationalAuthority",
 const registerableUserTypes = ["implementingAgency", "programDivision"];
 
 function createCaptcha() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const answer = Array.from(
-    { length: 5 },
-    () => alphabet[Math.floor(Math.random() * alphabet.length)]
-  ).join("");
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const numbers = "23456789";
+  const characters = letters + numbers;
+  const answerCharacters = [
+    letters[Math.floor(Math.random() * letters.length)],
+    numbers[Math.floor(Math.random() * numbers.length)],
+    ...Array.from(
+      { length: 3 },
+      () => characters[Math.floor(Math.random() * characters.length)]
+    )
+  ];
 
+  for (let index = answerCharacters.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [answerCharacters[index], answerCharacters[swapIndex]] = [
+      answerCharacters[swapIndex],
+      answerCharacters[index]
+    ];
+  }
+
+  const answer = answerCharacters.join("");
   return { question: answer, answer };
 }
 
@@ -74,7 +89,6 @@ function Login() {
   );
   const [captcha, setCaptcha] = useState(createCaptcha);
   const [captchaAnswer, setCaptchaAnswer] = useState("");
-  const [captchaError, setCaptchaError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const captchaCanvasRef = useRef(null);
   const t = (key) => translateText(key, language);
@@ -89,18 +103,14 @@ function Login() {
   const closeLogin = () => navigate("/login");
 
   const refreshCaptcha = () => {
-    setCaptcha(createCaptcha());
     setCaptchaAnswer("");
-    setCaptchaError("");
+    setCaptcha(createCaptcha());
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
-    if (captchaAnswer.trim().toUpperCase() !== captcha.answer) {
-      setCaptchaError(t("captchaError"));
-      setCaptcha(createCaptcha());
-      setCaptchaAnswer("");
+    if (userTypes.includes(userType)) {
+      navigate(`/dashboard/${userType}`);
     }
   };
 
@@ -153,7 +163,9 @@ function Login() {
                   id="login-user-type"
                   className="login-modal-input"
                   value={userType}
-                  onChange={(event) => setUserType(event.target.value)}
+                  onChange={(event) => {
+                    setUserType(event.target.value);
+                  }}
                   required
                 >
                   <option value="">{translations[language].selectUserType}</option>
@@ -175,9 +187,9 @@ function Login() {
                   className="login-modal-input"
                   id="login-username"
                   type="text"
+                  name="username"
                   placeholder={t("enterLoginId")}
                   autoComplete="username"
-                  required
                 />
 
                 <label className="visually-hidden" htmlFor="login-password">
@@ -187,10 +199,10 @@ function Login() {
                   <input
                     className="login-modal-input"
                     id="login-password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder={translations[language].password}
                     autoComplete="current-password"
-                    required
                   />
                   <button
                     type="button"
@@ -218,11 +230,7 @@ function Login() {
                       value={captchaAnswer}
                       onChange={(event) => {
                         setCaptchaAnswer(event.target.value);
-                        setCaptchaError("");
                       }}
-                      aria-describedby={captchaError ? "captcha-error" : undefined}
-                      aria-invalid={Boolean(captchaError)}
-                      required
                     />
                     <canvas
                       className="login-captcha-challenge"
@@ -230,7 +238,7 @@ function Login() {
                       width="300"
                       height="92"
                       role="img"
-                      aria-label={`CAPTCHA characters: ${captcha.answer}`}
+                      aria-label="CAPTCHA challenge"
                       aria-live="polite"
                     />
                   </div>
@@ -243,12 +251,6 @@ function Login() {
                     ↻
                   </button>
                 </div>
-                {captchaError && (
-                  <p className="captcha-error" id="captcha-error" role="alert">
-                    {captchaError}
-                  </p>
-                )}
-
                 <button className="login-submit" type="submit">
                   {t("loginNow")}
                 </button>
