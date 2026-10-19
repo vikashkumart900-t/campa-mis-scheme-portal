@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translations } from "../i18n";
+import emblem from "../assets/emblem.png";
 
 
 function Footer() {
@@ -9,41 +10,34 @@ function Footer() {
 
   return (
     <footer className="footer">
-      <video
-        className="footer-video"
-        src="/jungle/jungle.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        aria-hidden="true"
-      />
-      <div className="footer-overlay" />
-
       <div className="footer-container">
-        <div className="footer-column">
-          <h3>{t.aboutPortalTitle}</h3>
-          <p>{t.aboutPortalDescription}</p>
+        <div className="footer-brand">
+          <img src={emblem} alt="" />
+          <div>
+            <strong>{t.governmentOfIndia}</strong>
+            <span>{t.ministry}</span>
+          </div>
         </div>
 
-        <div className="footer-column">
-          <h3>{t.quickLinks}</h3>
+        <nav className="footer-links" aria-label={t.quickLinks}>
           <Link to="/login">{t.home}</Link>
           <Link to="/about">{t.aboutUs}</Link>
+          <Link to="/login">{t.schemes}</Link>
+          <Link to="/faq">{t.reports}</Link>
           <Link to="/faq">{t.faqs}</Link>
           <Link to="/user-manual">{t.userManual}</Link>
+          <Link to="/about">{t.contactUs}</Link>
+        </nav>
+
+        <div className="footer-social" aria-label="Social media">
+          <span aria-hidden="true">f</span>
+          <span aria-hidden="true">X</span>
+          <span aria-hidden="true">▶</span>
+          <span aria-hidden="true">in</span>
         </div>
 
-        <div className="footer-column">
-          <h3>{t.contactUs}</h3>
-          <p>🏛️ {t.ministry}</p>
-          <p>🇮🇳 {t.governmentOfIndia}</p>
-          <p>✉️ {t.email}: support@example.gov.in</p>
-        </div>
+        <p className="copyright">{t.copyright}</p>
       </div>
-
-      <div className="copyright">{t.copyright}</div>
     </footer>
   );
 }
