@@ -1,25 +1,27 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
-import Carousel from "./common/components/Carousel";
-import DocumentUpload from "./common/components/DocumentUpload";
-import ImageUpload from "./common/components/ImageUpload";
-import MultiSelect from "./common/components/MultiSelect";
-import PwaPrompt from "./common/components/PwaPrompt";
-import RadioGroup from "./common/components/RadioGroup";
-import Select from "./common/components/Select";
-import TextArea from "./common/components/TextArea";
-import TextInput from "./common/components/TextInput";
-import { getLocaleContent } from "./common/i18n";
+import Carousel from "./components/ui/Carousel";
+import DocumentUpload from "./components/ui/DocumentUpload";
+import ImageUpload from "./components/ui/ImageUpload";
+import MultiSelect from "./components/ui/MultiSelect";
+import PwaPrompt from "./components/ui/PwaPrompt";
+import RadioGroup from "./components/ui/RadioGroup";
+import Select from "./components/ui/Select";
+import TextArea from "./components/ui/TextArea";
+import TextInput from "./components/ui/TextInput";
 
 import Home from "./pages/Home";
+import ActiveSchemes from "./pages/ActiveSchemes";
 import About from "./pages/About";
+import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
+import ReportsAnalytics from "./pages/ReportsAnalytics";
 import UserManual from "./pages/UserManual";
 import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
 
-const ChartPanel = lazy(() => import("./common/components/ChartPanel"));
+const ChartPanel = lazy(() => import("./components/ui/ChartPanel"));
 
 const categoryOptions = [
   { value: "hospitality", label: "Hospitality" },
@@ -34,6 +36,59 @@ const interestOptions = [
   { value: "inventory", label: "Inventory" },
   { value: "alerts", label: "Alerts" }
 ];
+
+const commonDemoTranslations = {
+  en: {
+    appTitle: "Scheme MIS Portal",
+    dashboardTitle: "Common components dashboard",
+    languageLabel: "Language",
+    nameLabel: "Full name",
+    phoneLabel: "Phone number",
+    emailLabel: "Email address",
+    genderLabel: "Gender",
+    interestsLabel: "Interests",
+    notesLabel: "Notes",
+    imageUploadLabel: "Upload image",
+    documentUploadLabel: "Upload document",
+    selectLabel: "Select category",
+    submitButton: "Save details",
+    pwaPromptTitle: "Install app",
+    pwaPromptText: "Add this application to your home screen for a faster, app-like experience.",
+    installButton: "Install",
+    carouselTitle: "Featured highlights",
+    chartTitle: "Monthly analytics",
+    choosePlaceholder: "Choose an option",
+    imagePlaceholder: "Drag and drop or browse",
+    documentPlaceholder: "Upload PDF or image",
+    toastMessage: "Form saved successfully"
+  },
+  hi: {
+    appTitle: "स्कीम MIS पोर्टल",
+    dashboardTitle: "कॉमन कंपोनेंट्स डैशबोर्ड",
+    languageLabel: "भाषा",
+    nameLabel: "पूरा नाम",
+    phoneLabel: "फोन नंबर",
+    emailLabel: "ईमेल पता",
+    genderLabel: "लिंग",
+    interestsLabel: "रूचियां",
+    notesLabel: "नोट्स",
+    imageUploadLabel: "इमेज अपलोड करें",
+    documentUploadLabel: "दस्तावेज अपलोड करें",
+    selectLabel: "श्रेणी चुनें",
+    submitButton: "विवरण सेव करें",
+    pwaPromptTitle: "ऐप इंस्टॉल करें",
+    pwaPromptText: "तेज़ और ऐप जैसी अनुभव के लिए इस एप्लिकेशन को होम स्क्रीन में जोड़ें।",
+    installButton: "इंस्टॉल करें",
+    carouselTitle: "विशेष हाइलाइट्स",
+    chartTitle: "मासिक एनालिटिक्स",
+    choosePlaceholder: "ऑप्शन चुनें",
+    imagePlaceholder: "ड्रैग करें या ब्राउज़ करें",
+    documentPlaceholder: "PDF या इमेज अपलोड करें",
+    toastMessage: "फॉर्म सफलतापूर्वक सेव हुआ"
+  }
+};
+
+const getCommonDemoStrings = (locale = "en") => commonDemoTranslations[locale] ?? commonDemoTranslations.en;
 
 const slides = [
   {
@@ -66,7 +121,7 @@ function CommonDemo() {
     notes: ""
   });
 
-  const strings = getLocaleContent(language);
+  const strings = getCommonDemoStrings(language);
 
   const chartData = useMemo(
     () => ({
@@ -218,10 +273,15 @@ function App() {
     <Routes>
       <Route path="/components" element={<CommonDemo />} />
       <Route path="/login" element={<Home />} />
+      <Route path="/schemes" element={<ActiveSchemes />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/faq" element={<FAQ />} />
+      <Route path="/reports" element={<ReportsAnalytics />} />
       <Route path="/user-manual" element={<UserManual />} />
+      <Route path="/dashboard/:userType/inventory" element={<UserDashboard />} />
+      <Route path="/dashboard/:userType/proposal/:projectId" element={<UserDashboard />} />
       <Route path="/dashboard/:userType" element={<UserDashboard />} />
       <Route path="/signin" element={<><Home /><Login /></>} />
       <Route path="*" element={<Navigate to="/login" replace />} />

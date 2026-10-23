@@ -12,6 +12,21 @@
   --success: #16a34a;
   --danger: #dc2626;
   --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #101a17;
+  --surface: #1b2924;
+  --surface-alt: #22332d;
+  --primary: #38b89f;
+  --primary-dark: #a2e4d1;
+  --primary-soft: rgba(56, 184, 159, 0.16);
+  --text: #e5eee9;
+  --text-soft: #b0c0b8;
+  --border: #35483f;
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+  color-scheme: dark;
 }
 
 * {
@@ -25,7 +40,7 @@ html {
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(180deg, #edf8f4 0%, #f4f8fb 100%);
+  background: linear-gradient(180deg, #edf8f4 0%, var(--bg) 100%);
   color: var(--text);
 }
 

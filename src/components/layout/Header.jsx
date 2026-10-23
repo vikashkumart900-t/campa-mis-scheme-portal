@@ -1,14 +1,19 @@
-import emblem from "../assets/emblem.png";
-import ministryLogo from "../assets/ministry-logo.png";
-import moefccLogo from "../assets/moefcc.png";
-import indiaFlag from "../assets/india-flag.png";
+import emblem from "../../assets/emblem.png";
+import ministryLogo from "../../assets/ministry-logo.png";
+import moefccLogo from "../../assets/moefcc.png";
+import indiaFlag from "../../assets/india-flag.png";
 import { useState, useEffect } from "react";
-import { useLanguage } from "../i18n/LanguageContext.jsx";
-import { INDIAN_LANGUAGES, translations } from "../i18n";
+import { Moon, Sun } from "lucide-react";
+import { useLanguage } from "../../i18n/LanguageContext.jsx";
+import { INDIAN_LANGUAGES, translations } from "../../i18n";
 
 function Header() {
   const [fontSize, setFontSize] = useState(100);
+  const [theme, setTheme] = useState(() => (
+    localStorage.getItem("schemeMisTheme") === "dark" ? "dark" : "light"
+  ));
   const { language, setLanguage } = useLanguage();
+  const t = translations[language] ?? translations.en;
 
   const changeFontSize = (type) => {
     if (type === "decrease") setFontSize((prev) => Math.max(prev - 10, 80));
@@ -20,19 +25,25 @@ function Header() {
     document.documentElement.style.fontSize = `${fontSize}%`;
   }, [fontSize]);
 
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem("schemeMisTheme", theme);
+  }, [theme]);
+
   return (
     <>
       <div className="top-bar">
         <div className="government">
           <img src={indiaFlag} alt="Indian national flag" className="government__flag" />
-          <span>Government of India</span>
+          <span>{t.governmentOfIndia}</span>
           <span className="government__separator" aria-hidden="true">|</span>
-          <span className="government__ministry">Ministry of Environment, Forest and Climate Change</span>
+          <span className="government__ministry">{t.ministry}</span>
         </div>
 
-        <div className="accessibility" aria-label="Accessibility controls">
+        <div className="accessibility" aria-label={t.accessibility}>
           <label className="language-switcher" htmlFor="language-selector">
-            <span>{translations[language].language}:</span>
+            <span>{t.language}:</span>
             <select id="language-selector" value={language} onChange={(event) => setLanguage(event.target.value)}>
               {INDIAN_LANGUAGES.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -43,7 +54,15 @@ function Header() {
           <button type="button" className="accessibility-button" onClick={() => changeFontSize("decrease")} aria-label="Decrease font size">A-</button>
           <button type="button" className="accessibility-button" onClick={() => changeFontSize("normal")} aria-label="Reset font size">A</button>
           <button type="button" className="accessibility-button" onClick={() => changeFontSize("increase")} aria-label="Increase font size">A+</button>
-          <button type="button" className="accessibility-button accessibility-button--icon" aria-label="Accessibility options">◐</button>
+          <button
+            type="button"
+            className="accessibility-button accessibility-button--icon"
+            aria-label={t.accessibility}
+            aria-pressed={theme === "dark"}
+            onClick={() => setTheme((currentTheme) => currentTheme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Sun size={14} aria-hidden="true" /> : <Moon size={14} aria-hidden="true" />}
+          </button>
         </div>
       </div>
 
@@ -72,7 +91,7 @@ function Header() {
 
           <img
             src={ministryLogo}
-            alt="Ministry of Environment, Forest and Climate Change"
+            alt={t.ministry}
             className="header-brand-right__ministry-logo"
           />
         </div>

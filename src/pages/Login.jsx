@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translateText, translations } from "../i18n";
+import { apiUrls } from "../api/urls";
 import elephantImage from "../assets/elephant.jpg";
 import asthavanImage from "../assets/asthavan.jpg";
 import tigerImage from "../assets/tigers.jpg";
@@ -10,8 +11,13 @@ import rhinoImage from "../assets/rhino image.jpg";
 
 const userTypes = ["implementingAgency", "programDivision", "nationalAuthority", "hod"];
 const registerableUserTypes = ["implementingAgency", "programDivision"];
-const registrationApiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(/\/+$/, "");
-const registrationApiUrl = `${registrationApiBaseUrl}/registration`;
+const captchaCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function createCaptcha() {
+  return Array.from({ length: 6 }, () =>
+    captchaCharacters[Math.floor(Math.random() * captchaCharacters.length)]
+  ).join("");
+}
 
 async function readApiResponse(response) {
   if (!response.ok) {
@@ -21,72 +27,21 @@ async function readApiResponse(response) {
   return response;
 }
 
-function createCaptcha() {
-  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const numbers = "23456789";
-  const characters = letters + numbers;
-  const answerCharacters = [
-    letters[Math.floor(Math.random() * letters.length)],
-    numbers[Math.floor(Math.random() * numbers.length)],
-    ...Array.from(
-      { length: 3 },
-      () => characters[Math.floor(Math.random() * characters.length)]
-    )
-  ];
+function getLoginErrorMessage(error) {
+  let message = error instanceof Error ? error.message : String(error);
 
-  for (let index = answerCharacters.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [answerCharacters[index], answerCharacters[swapIndex]] = [
-      answerCharacters[swapIndex],
-      answerCharacters[index]
-    ];
+  try {
+    const parsedMessage = JSON.parse(message);
+    message = parsedMessage?.error || parsedMessage?.message || message;
+  } catch {
+    // Keep non-JSON API errors as-is.
   }
 
-  const answer = answerCharacters.join("");
-  return { question: answer, answer };
-}
-
-function drawCaptcha(canvas, text) {
-  const context = canvas.getContext("2d");
-  if (!context) {
-    return;
+  if (/user role not authorized|unauthori[sz]ed|invalid credentials|bad credentials|incorrect (username|password)|username or password/i.test(message)) {
+    return "Username or password is incorrect.";
   }
 
-  const width = canvas.width;
-  const height = canvas.height;
-  context.clearRect(0, 0, width, height);
-  context.fillStyle = "#fff";
-  context.fillRect(0, 0, width, height);
-
-  for (let i = 0; i < 100; i += 1) {
-    context.fillStyle = i % 3 === 0 ? "rgba(220, 38, 38, 0.58)" : "rgba(15, 23, 42, 0.35)";
-    context.beginPath();
-    context.arc(Math.random() * width, Math.random() * height, Math.random() * 1.4 + 0.4, 0, Math.PI * 2);
-    context.fill();
-  }
-
-  for (let i = 0; i < 5; i += 1) {
-    context.strokeStyle = "rgba(220, 38, 38, 0.72)";
-    context.lineWidth = 1 + Math.random();
-    context.beginPath();
-    context.moveTo(Math.random() * width, Math.random() * height);
-    context.lineTo(Math.random() * width, Math.random() * height);
-    context.stroke();
-  }
-
-  context.font = "bold 30px Georgia, serif";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  [...text].forEach((character, index) => {
-    const x = 30 + index * 60;
-    const y = height / 2 + (Math.random() - 0.5) * 12;
-    context.save();
-    context.translate(x, y);
-    context.rotate((Math.random() - 0.5) * 0.5);
-    context.fillStyle = "#111827";
-    context.fillText(character, 0, 0);
-    context.restore();
-  });
+  return `Unable to log in: ${message}`;
 }
 
 function Login() {
@@ -94,12 +49,12 @@ function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryUserType = searchParams.get("userType");
-  const [userType, setUserType] = useState(
-    userTypes.includes(queryUserType) ? queryUserType : ""
-  );
-  const [captcha, setCaptcha] = useState(createCaptcha);
-  const [captchaAnswer, setCaptchaAnswer] = useState("");
-  const [captchaError, setCaptchaError] = useState("");
+  const userType = userTypes.includes(queryUserType) ? queryUserType : "implementingAgency";
+  const isStateSchemeLogin = searchParams.get("scope") === "state";
+  const [loginError, setLoginError] = useState("");
+  const [loginSaving, setLoginSaving] = useState(false);
+  const [captchaCode, setCaptchaCode] = useState(createCaptcha);
+  const [captchaInput, setCaptchaInput] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [registrationLoading, setRegistrationLoading] = useState(
@@ -114,7 +69,7 @@ function Login() {
   const [districtError, setDistrictError] = useState("");
   const [registrationForm, setRegistrationForm] = useState({
     organizationId: "",
-    stateId: "",
+    stateCode: "",
     districtId: "",
     programDivisionId: "",
     officerName: "",
@@ -123,18 +78,16 @@ function Login() {
     mobile: "",
     password: ""
   });
-  const captchaCanvasRef = useRef(null);
   const t = (key) => translateText(key, language);
-  const userTypeLabel = userType ? translations[language][userType] : "";
 
   useEffect(() => {
-    if (!registerableUserTypes.includes(userType)) {
+    if (!registrationOpen || !registerableUserTypes.includes(userType)) {
       return undefined;
     }
 
     const controller = new AbortController();
 
-    fetch(`${registrationApiUrl}/dropdown-metadata`, { signal: controller.signal })
+    fetch(apiUrls.registrationDropdownMetadata, { signal: controller.signal })
       .then(readApiResponse)
       .then((response) => response.json())
       .then((metadata) => {
@@ -159,21 +112,22 @@ function Login() {
       });
 
     return () => controller.abort();
-  }, [userType]);
+  }, [registrationOpen, userType]);
 
   useEffect(() => {
     if (
+      !registrationOpen ||
       userType !== "implementingAgency" ||
       registrationMetadata?.organizations.find(
         (organization) => organization.organizationId === Number(registrationForm.organizationId)
       )?.iaCategory !== "STATE_IA" ||
-      !registrationForm.stateId
+      !registrationForm.stateCode
     ) {
       return undefined;
     }
 
     const controller = new AbortController();
-    fetch(`${registrationApiUrl}/districts/${registrationForm.stateId}`, { signal: controller.signal })
+    fetch(apiUrls.registrationDistricts(registrationForm.stateCode), { signal: controller.signal })
       .then(readApiResponse)
       .then((response) => response.json())
       .then((districtOptions) => {
@@ -194,21 +148,9 @@ function Login() {
       });
 
     return () => controller.abort();
-  }, [registrationForm.organizationId, registrationForm.stateId, registrationMetadata, userType]);
-
-  useEffect(() => {
-    if (captchaCanvasRef.current) {
-      drawCaptcha(captchaCanvasRef.current, captcha.answer);
-    }
-  }, [captcha]);
+  }, [registrationForm.organizationId, registrationForm.stateCode, registrationMetadata, registrationOpen, userType]);
 
   const closeLogin = () => navigate("/login");
-
-  const refreshCaptcha = () => {
-    setCaptchaAnswer("");
-    setCaptchaError("");
-    setCaptcha(createCaptcha());
-  };
 
   const handleRegistrationFieldChange = (event) => {
     const { name, value } = event.target;
@@ -245,7 +187,7 @@ function Login() {
       if (!payload.organizationId) {
         throw new Error("The selected programme division is not linked to an organization.");
       }
-      const response = await fetch(`${registrationApiUrl}/nodal-officer`, {
+      const response = await fetch(apiUrls.nodalOfficerRegistration, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -254,7 +196,7 @@ function Login() {
       setRegistrationMessage("Nodal officer details saved successfully.");
       setRegistrationForm({
         organizationId: "",
-        stateId: "",
+        stateCode: "",
         districtId: "",
         programDivisionId: "",
         officerName: "",
@@ -295,17 +237,70 @@ function Login() {
     ) || []
     : [];
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!captchaAnswer.trim() || captchaAnswer.trim().toUpperCase() !== captcha.answer) {
-      setCaptchaError(t("captchaError"));
-      setCaptchaAnswer("");
-      setCaptcha(createCaptcha());
+    if (!isStateSchemeLogin) {
+      setLoginError("Login is currently available for State schemes only.");
       return;
     }
 
-    if (userTypes.includes(userType)) {
-      navigate(`/dashboard/${userType}`);
+    if (captchaInput.trim().toUpperCase() !== captchaCode) {
+      setLoginError("CAPTCHA does not match. Please try again.");
+      setCaptchaInput("");
+      setCaptchaCode(createCaptcha());
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const username = String(formData.get("username") || "").trim();
+    const password = String(formData.get("password") || "");
+    setLoginError("");
+    setLoginSaving(true);
+
+    try {
+      const response = await fetch(apiUrls.login, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      await readApiResponse(response);
+
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        throw new Error("The login API returned an invalid response.");
+      }
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+      if (result?.status !== undefined && Number(result.status) !== 200) {
+        throw new Error(result.message || "Login failed.");
+      }
+
+      const jwt = result?.data?.jwt;
+      if (typeof jwt !== "string" || !jwt.trim()) {
+        throw new Error("The login API response did not include an access token.");
+      }
+
+      sessionStorage.setItem("campaJwt", jwt);
+      if (userTypes.includes(userType)) {
+        const dashboardParams = new URLSearchParams();
+        ["scope", "schemeCode", "schemeName", "organizationId", "organizationName", "programDivisionId", "programDivisionName"].forEach((key) => {
+          const value = searchParams.get(key);
+          if (value) {
+            dashboardParams.set(key, value);
+          }
+        });
+        const query = dashboardParams.toString();
+        navigate(`/dashboard/${userType}${query ? `?${query}` : ""}`);
+      }
+    } catch (error) {
+      setLoginError(getLoginErrorMessage(error));
+    } finally {
+      setLoginSaving(false);
     }
   };
 
@@ -341,15 +336,24 @@ function Login() {
         </div>
         <div className="login-modal-content">
           <h1 id="login-modal-title">
-              {registrationOpen
-                ? "Nodal Officer Registration"
-                : userType
-                ? `${t("hello")} ${userTypeLabel}`
-                : translations[language].login}
-            </h1>
-            <p className="login-modal-subtitle">
-              {registrationOpen ? "Enter your organization and nodal officer details." : t("loginToAccount")}
-            </p>
+            {registrationOpen ? "Nodal Officer Registration" : translations[language].login}
+          </h1>
+          <p className="login-modal-subtitle">
+            {registrationOpen ? "Enter your organization and nodal officer details." : t("loginToAccount")}
+          </p>
+
+          {!registrationOpen && searchParams.get("schemeName") && (
+            <div className="login-selection-summary" aria-label="Selected scheme details">
+              <strong>Selected details</strong>
+              <span>Scheme: {searchParams.get("schemeName")}</span>
+              {searchParams.get("programDivisionName") && (
+                <span>Programme division: {searchParams.get("programDivisionName")}</span>
+              )}
+              {searchParams.get("organizationName") && (
+                <span>Implementing agency: {searchParams.get("organizationName")}</span>
+              )}
+            </div>
+          )}
 
             {registrationOpen ? (
               <form onSubmit={handleRegistrationSubmit}>
@@ -373,7 +377,7 @@ function Login() {
                             setRegistrationForm((previous) => ({
                               ...previous,
                               organizationId: value,
-                              stateId: "",
+                              stateCode: "",
                               districtId: "",
                               programDivisionId: ""
                             }));
@@ -396,13 +400,13 @@ function Login() {
                             <select
                               id="registration-state"
                               className="login-modal-input"
-                              name="stateId"
-                              value={registrationForm.stateId}
+                              name="stateCode"
+                              value={registrationForm.stateCode}
                               onChange={(event) => {
                                 const { value } = event.target;
                                 setRegistrationForm((previous) => ({
                                   ...previous,
-                                  stateId: value,
+                                  stateCode: value,
                                   districtId: ""
                                 }));
                                 setDistricts([]);
@@ -413,7 +417,7 @@ function Login() {
                             >
                               <option value="">Select state</option>
                               {registrationMetadata.states.map((state) => (
-                                <option key={state.stateId} value={state.stateId}>{state.stateName}</option>
+                                <option key={state.stateCode} value={state.stateCode}>{state.stateName}</option>
                               ))}
                             </select>
                             <label className="visually-hidden" htmlFor="registration-district">District</label>
@@ -423,7 +427,7 @@ function Login() {
                               name="districtId"
                               value={registrationForm.districtId}
                               onChange={handleRegistrationFieldChange}
-                              disabled={!registrationForm.stateId || districtLoading}
+                              disabled={!registrationForm.stateCode || districtLoading}
                               required
                             >
                               <option value="">
@@ -530,138 +534,98 @@ function Login() {
               </form>
             ) : (
             <form onSubmit={handleSubmit}>
-              {!userType && (
-                <>
-                  <label className="visually-hidden" htmlFor="login-user-type">
-                  {translations[language].selectUserType}
-                </label>
-                <select
-                  id="login-user-type"
-                  className="login-modal-input"
-                  value={userType}
-                  onChange={(event) => {
-                    const selectedUserType = event.target.value;
-                    setUserType(selectedUserType);
-                    setRegistrationLoading(registerableUserTypes.includes(selectedUserType));
-                    setRegistrationError("");
-                    setRegistrationMetadata(null);
-                    setDistricts([]);
-                    setDistrictLoading(false);
-                    setDistrictError("");
-                    setRegistrationForm((previous) => ({
-                      ...previous,
-                      organizationId: "",
-                      stateId: "",
-                      districtId: "",
-                      programDivisionId: ""
-                    }));
-                    setRegistrationMessage("");
-                  }}
-                  required
-                >
-                  <option value="">{translations[language].selectUserType}</option>
-                  {userTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {translations[language][type]}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
+              <label className="visually-hidden" htmlFor="login-username">
+                {translations[language].username}
+              </label>
+              <input
+                className="login-modal-input"
+                id="login-username"
+                type="text"
+                name="username"
+                placeholder={t("enterLoginId")}
+                autoComplete="username"
+                required
+                onChange={() => setLoginError("")}
+              />
 
-            {userType && (
-              <>
-                <label className="visually-hidden" htmlFor="login-username">
-                  {translations[language].username}
-                </label>
+              <label className="visually-hidden" htmlFor="login-password">
+                {translations[language].password}
+              </label>
+              <div className="login-password-field">
                 <input
                   className="login-modal-input"
-                  id="login-username"
-                  type="text"
-                  name="username"
-                  placeholder={t("enterLoginId")}
-                  autoComplete="username"
+                  id="login-password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={translations[language].password}
+                  autoComplete="current-password"
+                  required
+                  onChange={() => setLoginError("")}
                 />
+                <button
+                  type="button"
+                  className="login-password-toggle"
+                  onClick={() => setShowPassword((shown) => !shown)}
+                  aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
 
-                <label className="visually-hidden" htmlFor="login-password">
-                  {translations[language].password}
-                </label>
-                <div className="login-password-field">
+              <label className="login-captcha-label" htmlFor="login-captcha">
+                Enter CAPTCHA
+              </label>
+              <div className="login-captcha-row">
+                <div className="login-captcha-entry">
                   <input
                     className="login-modal-input"
-                    id="login-password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder={translations[language].password}
-                    autoComplete="current-password"
+                    id="login-captcha"
+                    name="captcha"
+                    type="text"
+                    value={captchaInput}
+                    placeholder="Enter CAPTCHA"
+                    autoComplete="off"
+                    maxLength={6}
+                    required
+                    onChange={(event) => {
+                      setCaptchaInput(event.target.value);
+                      setLoginError("");
+                    }}
                   />
-                  <button
-                    type="button"
-                    className="login-password-toggle"
-                    onClick={() => setShowPassword((shown) => !shown)}
-                    aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
+                  <span className="login-captcha-challenge" aria-label={`CAPTCHA code ${captchaCode}`}>
+                    {captchaCode}
+                  </span>
                 </div>
-
-                <div className="login-captcha-row">
-                  <label className="visually-hidden" htmlFor="captcha-answer">
-                    {t("captchaLabel")}
-                  </label>
-                  <div className="login-captcha-entry">
-                    <input
-                      className="login-modal-input"
-                      id="captcha-answer"
-                      type="text"
-                      autoComplete="off"
-                      autoCapitalize="characters"
-                      spellCheck="false"
-                      placeholder={t("captchaAnswerPlaceholder")}
-                      value={captchaAnswer}
-                      onChange={(event) => {
-                        setCaptchaAnswer(event.target.value);
-                        setCaptchaError("");
-                      }}
-                      aria-describedby={captchaError ? "captcha-error" : undefined}
-                      aria-invalid={Boolean(captchaError)}
-                      required
-                    />
-                    <canvas
-                      className="login-captcha-challenge"
-                      ref={captchaCanvasRef}
-                      width="300"
-                      height="92"
-                      role="img"
-                      aria-label="CAPTCHA challenge"
-                      aria-live="polite"
-                    />
-                  </div>
-                  <button
-                    className="login-captcha-refresh"
-                    type="button"
-                    onClick={refreshCaptcha}
-                    aria-label={t("refreshCaptcha")}
-                  >
-                    ↻
-                  </button>
-                </div>
-                {captchaError && (
-                  <p className="captcha-error" id="captcha-error" role="alert">
-                    {captchaError}
-                  </p>
-                )}
-                <button className="login-submit" type="submit">
-                  {t("loginNow")}
+                <button
+                  className="login-captcha-refresh"
+                  type="button"
+                  onClick={() => {
+                    setCaptchaCode(createCaptcha());
+                    setCaptchaInput("");
+                    setLoginError("");
+                  }}
+                  aria-label="Refresh CAPTCHA"
+                  title="Refresh CAPTCHA"
+                >
+                  ↻
                 </button>
-                {registerableUserTypes.includes(userType) && (
-                  <p className="login-register-prompt">
-                    {t("noAccount")}{" "}
-                    <button type="button" onClick={() => setRegistrationOpen(true)}>{t("registerNow")}</button>
-                  </p>
-                )}
-              </>
-            )}
+              </div>
+
+              {!isStateSchemeLogin && (
+                <p className="captcha-error" role="status">
+                  Login is currently available for State schemes only.
+                </p>
+              )}
+              {loginError && <p className="captcha-error" role="alert">{loginError}</p>}
+              <button className="login-submit" type="submit" disabled={loginSaving || !isStateSchemeLogin}>
+                {loginSaving ? "Logging in..." : t("loginNow")}
+              </button>
+              {registerableUserTypes.includes(userType) && (
+                <p className="login-register-prompt">
+                  {t("noAccount")}{" "}
+                  <button type="button" onClick={() => setRegistrationOpen(true)}>{t("registerNow")}</button>
+                </p>
+              )}
           </form>
           )}
         </div>

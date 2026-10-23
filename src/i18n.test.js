@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { INDIAN_LANGUAGES, translateText } from "./i18n.js";
+import { getHomeCopy } from "./i18n/homeTranslations.js";
 
 test("translates supported translation keys into Hindi", () => {
   assert.equal(translateText("home", "hi"), "मुखपृष्ठ");
@@ -64,4 +65,25 @@ test("supports all configured language options", () => {
   assert.ok(translated.every((language) => language.home));
   assert.ok(translated.every((language) => language.language));
   assert.ok(translated.every((language) => language.governmentOfIndiaShort));
+});
+
+test("keeps the original Home copy in English and resolves Home text for every locale", () => {
+  const englishCopy = getHomeCopy("en");
+  assert.equal(englishCopy.heroTitle, "Healthy Forests.");
+  assert.equal(
+    englishCopy.heroDescription,
+    "Facilitating transparent, efficient and accountable management of CAMPA funds for forest conservation, biodiversity and climate resilience across India."
+  );
+  assert.equal(
+    englishCopy.quote,
+    "Conserving forests is not just an environmental goal, it is a life goal."
+  );
+
+  for (const { value } of INDIAN_LANGUAGES) {
+    const copy = getHomeCopy(value);
+    assert.ok(copy.heroTitle, `${value} must have a Home hero title`);
+    assert.ok(copy.heroDescription, `${value} must have a Home description`);
+    assert.ok(copy.forestRestorationDetails, `${value} must have programme details`);
+    assert.ok(copy.quote, `${value} must have the conservation quote`);
+  }
 });

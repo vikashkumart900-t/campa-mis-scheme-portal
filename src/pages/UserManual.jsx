@@ -1,6 +1,6 @@
-import Header from "../components/Header";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import Header from "../components/layout/Header";
+import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translations } from "../i18n";
 
