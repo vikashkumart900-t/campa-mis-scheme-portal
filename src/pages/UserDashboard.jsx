@@ -38,6 +38,7 @@ function UserDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const expiresAt = useRef(null);
+  const selectedSchemeScope = searchParams.get("scope") || "";
   const selectedSchemeCode = searchParams.get("schemeCode") || "";
   const selectedSchemeName = searchParams.get("schemeName") || "";
   const dashboardQuery = searchParams.toString();
@@ -78,11 +79,11 @@ function UserDashboard() {
   if (userType === "implementingAgency" && !sessionStorage.getItem("campaJwt")) {
     const loginParams = new URLSearchParams(searchParams);
     loginParams.set("userType", "implementingAgency");
-    loginParams.set("scope", "state");
+    loginParams.set("scope", selectedSchemeScope || "state");
     return <Navigate to={`/signin?${loginParams.toString()}`} replace />;
   }
 
-  if (userType === "implementingAgency") {
+  if (userType === "implementingAgency" && selectedSchemeScope === "state") {
     if (
       location.pathname.endsWith("/inventory") ||
       location.pathname === `/dashboard/${userType}`

@@ -44,10 +44,10 @@ function ActiveSchemes() {
 
   const proceedToLogin = () => {
     if (!selectedScheme || !schemeDetails || !hasRequiredSchemeDetails) return;
-    const loginParams = new URLSearchParams({
-      userType: "implementingAgency",
-      scope: schemeScope
-    });
+    const loginParams = new URLSearchParams({ scope: schemeScope });
+    if (schemeScope !== "state-central") {
+      loginParams.set("userType", "implementingAgency");
+    }
     if (selectedScheme.schemeCode) loginParams.set("schemeCode", selectedScheme.schemeCode);
     if (selectedScheme.schemeId != null) loginParams.set("schemeId", String(selectedScheme.schemeId));
     const selectedSchemeName = schemeDetails.schemeName || selectedScheme.schemeName;

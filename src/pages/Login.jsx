@@ -49,8 +49,12 @@ function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryUserType = searchParams.get("userType");
-  const userType = userTypes.includes(queryUserType) ? queryUserType : "implementingAgency";
-  const isStateSchemeLogin = searchParams.get("scope") === "state";
+  const [selectedRole, setSelectedRole] = useState(
+    () => userTypes.includes(queryUserType) ? queryUserType : "implementingAgency"
+  );
+  const userType = userTypes.includes(queryUserType) ? queryUserType : selectedRole;
+  const roleSelectionRequired = searchParams.get("scope") === "state-central" && !queryUserType;
+  const isStateSchemeLogin = ["state", "state-central"].includes(searchParams.get("scope"));
   const [loginError, setLoginError] = useState("");
   const [loginSaving, setLoginSaving] = useState(false);
   const [captchaCode, setCaptchaCode] = useState(createCaptcha);
@@ -79,6 +83,12 @@ function Login() {
     password: ""
   });
   const t = (key) => translateText(key, language);
+  const roleLabels = {
+    implementingAgency: translations[language].implementingAgency,
+    programDivision: translations[language].programDivision,
+    hod: translations[language].hod,
+    nationalAuthority: "National CAMPA"
+  };
 
   useEffect(() => {
     if (!registrationOpen || !registerableUserTypes.includes(userType)) {
@@ -240,7 +250,7 @@ function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!isStateSchemeLogin) {
-      setLoginError("Login is currently available for State schemes only.");
+      setLoginError("Login is currently available for State and State-Central schemes only.");
       return;
     }
 
@@ -342,17 +352,28 @@ function Login() {
             {registrationOpen ? "Enter your organization and nodal officer details." : t("loginToAccount")}
           </p>
 
-          {!registrationOpen && searchParams.get("schemeName") && (
-            <div className="login-selection-summary" aria-label="Selected scheme details">
-              <strong>Selected details</strong>
-              <span>Scheme: {searchParams.get("schemeName")}</span>
-              {searchParams.get("programDivisionName") && (
-                <span>Programme division: {searchParams.get("programDivisionName")}</span>
-              )}
-              {searchParams.get("organizationName") && (
-                <span>Implementing agency: {searchParams.get("organizationName")}</span>
-              )}
-            </div>
+          {!registrationOpen && roleSelectionRequired && (
+            <fieldset className="login-role-selection">
+              <legend>Select your role</legend>
+              {userTypes.map((role) => (
+                <label
+                  className={`login-role-option${userType === role ? " login-role-option--selected" : ""}`}
+                  key={role}
+                >
+                  <input
+                    type="radio"
+                    name="login-role"
+                    value={role}
+                    checked={userType === role}
+                    onChange={() => {
+                      setSelectedRole(role);
+                      setLoginError("");
+                    }}
+                  />
+                  <span>{roleLabels[role]}</span>
+                </label>
+              ))}
+            </fieldset>
           )}
 
             {registrationOpen ? (
@@ -613,7 +634,7 @@ function Login() {
 
               {!isStateSchemeLogin && (
                 <p className="captcha-error" role="status">
-                  Login is currently available for State schemes only.
+                  Login is currently available for State and State-Central schemes only.
                 </p>
               )}
               {loginError && <p className="captcha-error" role="alert">{loginError}</p>}
