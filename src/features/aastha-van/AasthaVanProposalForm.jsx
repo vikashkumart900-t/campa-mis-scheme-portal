@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { getProjectStorageKey, readProjects } from "./projectStorage";
+import AasthaVanProjectDetails from "./AasthaVanProjectDetails";
 
 const proposalSections = [
   {
@@ -561,22 +562,33 @@ function AasthaVanProposalForm({
   schemeName,
   schemeCode,
   initialProjectId = "",
+  startFresh = false,
+  initialShowProjectDetails = false,
   onLogout,
-  onShowInventory
+  onShowInventory,
+  onOpenProjectDetails,
+  onContinueProject
 }) {
   const storageKey = `aasthaVanProposalDraft:${schemeCode || "state-proposal"}`;
   const projectStorageKey = getProjectStorageKey(schemeCode);
   const [initialDraft] = useState(() => readDraft(storageKey));
   const [initialProjects] = useState(() => readProjects(projectStorageKey));
   const initialProject = initialProjects.projects[initialProjectId];
-  const [values, setValues] = useState(() => ({
-    ...(initialProject?.values || initialDraft.values),
-    proposalTitle: initialProject?.values.proposalTitle || initialDraft.values.proposalTitle || schemeName || "Aastha Van Sanrakshan Yojana",
-    aasthaVanName: initialProject?.values.aasthaVanName || initialDraft.values.aasthaVanName || schemeName || ""
-  }));
+  const [values, setValues] = useState(() => {
+    if (startFresh && !initialProject) return {};
+
+    return {
+      ...(initialProject?.values || initialDraft.values),
+      proposalTitle: initialProject?.values.proposalTitle || initialDraft.values.proposalTitle || schemeName || "Aastha Van Sanrakshan Yojana",
+      aasthaVanName: initialProject?.values.aasthaVanName || initialDraft.values.aasthaVanName || schemeName || ""
+    };
+  });
   const [projects, setProjects] = useState(initialProjects.projects);
   const [selectedProjectId, setSelectedProjectId] = useState(initialProject ? initialProjectId : "");
   const [activeSection, setActiveSection] = useState(initialProject ? 1 : 0);
+  const [showProjectDetails, setShowProjectDetails] = useState(
+    Boolean(initialShowProjectDetails && initialProject)
+  );
   const [sectionOneSubmitted, setSectionOneSubmitted] = useState(Boolean(initialProject));
   const [, setDraftMessage] = useState(initialDraft.message);
   const [submissionMessage, setSubmissionMessage] = useState(initialProjects.message);
@@ -710,7 +722,12 @@ function AasthaVanProposalForm({
           <h1>Aastha Van Sanrakshan Yojana</h1>
           <p>Proposal submission form{schemeName ? ` — ${schemeName}` : ""}</p>
         </div>
-        <button type="button" onClick={onLogout}>Log out</button>
+        <div className="aastha-proposal-topbar-actions">
+          {selectedProjectId && (
+            <button type="button" onClick={onShowInventory}>Project Inventory</button>
+          )}
+          <button type="button" onClick={onLogout}>Log out</button>
+        </div>
       </header>
 
       <div className="aastha-proposal-layout">
@@ -719,7 +736,9 @@ function AasthaVanProposalForm({
             <div className="aastha-proposal-progress-heading">
               <div>
                 <span>PROPOSAL FORM</span>
-                <strong>Section {String(activeSection + 1).padStart(2, "0")}</strong>
+                <strong>
+                  {showProjectDetails ? "Project Details" : `Section ${String(activeSection + 1).padStart(2, "0")}`}
+                </strong>
               </div>
               <strong className="aastha-proposal-progress-count">
                 {activeSection + 1}<span> / {proposalSections.length}</span>
@@ -728,132 +747,149 @@ function AasthaVanProposalForm({
             <progress
               value={activeSection + 1}
               max={proposalSections.length}
-              aria-label={`Section ${activeSection + 1} of ${proposalSections.length}`}
+              aria-label={showProjectDetails
+                ? `Project details before section ${activeSection + 1}`
+                : `Section ${activeSection + 1} of ${proposalSections.length}`}
             />
-            <p>Currently editing: {section.title}</p>
+            <p>{showProjectDetails ? "Reviewing saved inventory details." : `Currently editing: ${section.title}`}</p>
           </div>
           <nav aria-label="Form sections">
             {proposalSections.map((item, index) => (
-              <button
-                type="button"
-                key={item.title}
-                className={`aastha-proposal-step${index === activeSection ? " active" : ""}`}
-                aria-current={index === activeSection ? "step" : undefined}
-                disabled={index > 0 && !sectionOneSubmitted}
-                onClick={() => {
-                  if (index === 0 || sectionOneSubmitted) {
-                    setActiveSection(index);
-                    setSubmissionMessage("");
-                  }
-                }}
-              >
-                <span className="aastha-proposal-step-number">{String(index + 1).padStart(2, "0")}</span>
-                <span className="aastha-proposal-step-title">{item.title}</span>
-              </button>
+              <Fragment key={item.title}>
+                <button
+                  type="button"
+                  className={`aastha-proposal-step${!showProjectDetails && index === activeSection ? " active" : ""}`}
+                  aria-current={!showProjectDetails && index === activeSection ? "step" : undefined}
+                  disabled={(index === 0 && Boolean(selectedProjectId)) || (index > 0 && !sectionOneSubmitted)}
+                  onClick={() => {
+                    if ((index === 0 && !selectedProjectId) || (index > 0 && sectionOneSubmitted)) {
+                      setShowProjectDetails(false);
+                      setActiveSection(index);
+                      setSubmissionMessage("");
+                      if (index > 0) onContinueProject();
+                    }
+                  }}
+                >
+                  <span className="aastha-proposal-step-number">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="aastha-proposal-step-title">{item.title}</span>
+                </button>
+                {index === 0 && sectionOneSubmitted && (showProjectDetails || activeSection === 0) && (
+                  <button
+                    type="button"
+                    className={`aastha-proposal-step${showProjectDetails ? " active" : ""}`}
+                    aria-current={showProjectDetails ? "step" : undefined}
+                    disabled={!sectionOneSubmitted}
+                    onClick={() => {
+                      setShowProjectDetails(true);
+                      setSubmissionMessage("");
+                      onOpenProjectDetails();
+                    }}
+                  >
+                    <span className="aastha-proposal-step-number">ID</span>
+                    <span className="aastha-proposal-step-title">Project Details</span>
+                  </button>
+                )}
+              </Fragment>
             ))}
           </nav>
         </aside>
 
         <section className="aastha-proposal-content" aria-labelledby="aastha-proposal-section-title">
-          <div className="aastha-proposal-section-heading">
-            <div>
-              <span>SECTION {String(activeSection + 1).padStart(2, "0")}</span>
-              <h2 id="aastha-proposal-section-title">{section.title}</h2>
-              <p>{section.description}</p>
-            </div>
-            {schemeCode && <small>Selected scheme code: {schemeCode}</small>}
-          </div>
-
-          {Object.keys(projects).length > 0 && (
-            <div className="aastha-proposal-project-picker">
-              <div>
-                <strong>Selected Project ID</strong>
-                <span>{selectedProjectId || "No project selected"}</span>
+          {showProjectDetails ? (
+            <AasthaVanProjectDetails
+              project={projects[selectedProjectId]}
+              schemeCode={schemeCode}
+              onContinue={() => {
+                setShowProjectDetails(false);
+                setActiveSection(1);
+                setSubmissionMessage("");
+                onContinueProject();
+              }}
+            />
+          ) : (
+            <>
+              <div className="aastha-proposal-section-heading">
+                <div>
+                  <span>SECTION {String(activeSection + 1).padStart(2, "0")}</span>
+                  <h2 id="aastha-proposal-section-title">{section.title}</h2>
+                  <p>{section.description}</p>
+                </div>
+                {schemeCode && <small>Selected scheme code: {schemeCode}</small>}
               </div>
-              <div>
-                <button
-                  type="button"
-                  className="aastha-proposal-secondary"
-                  onClick={onShowInventory}
-                >
-                  View Projects
-                </button>
-                <p>Project details are saved in this browser and remain linked to the selected ID.</p>
-              </div>
-            </div>
-          )}
 
-          {section.groups.map((group) => (
-            <section className="aastha-proposal-group" key={group.title}>
-              <h3>{group.title}</h3>
-              {group.description && <p className="aastha-proposal-guidance">{group.description}</p>}
-              <div className="aastha-proposal-fields">
-                {group.fields
-                  .filter((field) => !field.dependsOn || values[field.dependsOn] === field.dependsOnValue)
-                  .map((field) => (
+              {section.groups.map((group) => (
+                <section className="aastha-proposal-group" key={group.title}>
+                  <h3>{group.title}</h3>
+                  {group.description && <p className="aastha-proposal-guidance">{group.description}</p>}
+                  <div className="aastha-proposal-fields">
+                    {group.fields
+                      .filter((field) => !field.dependsOn || values[field.dependsOn] === field.dependsOnValue)
+                      .map((field) => (
                       <ProposalField
                         key={field.name}
                         field={field}
                         value={values[field.name]}
                         onChange={updateField}
                       />
-                    ))}
+                      ))}
+                  </div>
+                </section>
+              ))}
+
+              {(section.tables || []).map((table) => (
+                <ProposalTable
+                  key={table.title}
+                  table={table}
+                  values={values}
+                  onChange={updateTableCell}
+                  sectionIndex={activeSection}
+                />
+              ))}
+
+              <div className="aastha-proposal-navigation">
+                <button
+                  type="button"
+                  className="aastha-proposal-secondary"
+                  disabled={activeSection === 0}
+                  onClick={() => setActiveSection((current) => Math.max(0, current - 1))}
+                >
+                  Previous section
+                </button>
+                {activeSection === 0 && (
+                  <button
+                    type="button"
+                    className="aastha-proposal-primary"
+                    onClick={handleSubmitSectionOne}
+                  >
+                    Create Inventory
+                  </button>
+                )}
+                {activeSection > 0 && activeSection < proposalSections.length - 1 && (
+                  <button
+                    type="button"
+                    className="aastha-proposal-primary"
+                    onClick={() => {
+                      if (!sectionOneSubmitted) return;
+                      setSubmissionMessage("");
+                      setActiveSection((current) => Math.min(proposalSections.length - 1, current + 1));
+                    }}
+                  >
+                    Next section
+                  </button>
+                )}
+                {activeSection === proposalSections.length - 1 && (
+                  <button
+                    type="button"
+                    className="aastha-proposal-primary"
+                    onClick={handleSubmitProposal}
+                  >
+                    Submit Proposal
+                  </button>
+                )}
               </div>
-            </section>
-          ))}
-
-          {(section.tables || []).map((table) => (
-            <ProposalTable
-              key={table.title}
-              table={table}
-              values={values}
-              onChange={updateTableCell}
-              sectionIndex={activeSection}
-            />
-          ))}
-
-          <div className="aastha-proposal-navigation">
-            <button
-              type="button"
-              className="aastha-proposal-secondary"
-              disabled={activeSection === 0}
-              onClick={() => setActiveSection((current) => Math.max(0, current - 1))}
-            >
-              Previous section
-            </button>
-            {activeSection === 0 && (
-              <button
-                type="button"
-                className="aastha-proposal-primary"
-                onClick={handleSubmitSectionOne}
-              >
-                Create Inventory
-              </button>
-            )}
-            {activeSection > 0 && activeSection < proposalSections.length - 1 && (
-              <button
-                type="button"
-                className="aastha-proposal-primary"
-                onClick={() => {
-                  if (!sectionOneSubmitted) return;
-                  setSubmissionMessage("");
-                  setActiveSection((current) => Math.min(proposalSections.length - 1, current + 1));
-                }}
-              >
-                Next section
-              </button>
-            )}
-            {activeSection === proposalSections.length - 1 && (
-              <button
-                type="button"
-                className="aastha-proposal-primary"
-                onClick={handleSubmitProposal}
-              >
-                Submit Proposal
-              </button>
-            )}
-          </div>
-          {submissionMessage && <p className="aastha-proposal-submission-message" role="alert">{submissionMessage}</p>}
+              {submissionMessage && <p className="aastha-proposal-submission-message" role="alert">{submissionMessage}</p>}
+            </>
+          )}
         </section>
       </div>
     </main>

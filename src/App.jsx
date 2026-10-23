@@ -281,6 +281,8 @@ function App() {
       <Route path="/reports" element={<ReportsAnalytics />} />
       <Route path="/user-manual" element={<UserManual />} />
       <Route path="/dashboard/:userType/inventory" element={<UserDashboard />} />
+      <Route path="/dashboard/:userType/create" element={<UserDashboard />} />
+      <Route path="/dashboard/:userType/project/:projectId/details" element={<UserDashboard />} />
       <Route path="/dashboard/:userType/proposal/:projectId" element={<UserDashboard />} />
       <Route path="/dashboard/:userType" element={<UserDashboard />} />
       <Route path="/signin" element={<><Home /><Login /></>} />

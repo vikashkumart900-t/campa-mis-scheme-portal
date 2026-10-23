@@ -1054,7 +1054,7 @@
 
 .ia-dashboard.installment-report-active .ia-installment-table th::after,
 .ia-dashboard.history-log-active .ia-history-table th::after {
-  content: "◆";
+  content: "â—†";
   margin-left: 5px;
   color: rgba(255, 255, 255, 0.23);
   font-size: 8px;
@@ -1122,7 +1122,7 @@
 }
 
 .ia-installment-table th::after {
-  content: "◆";
+  content: "â—†";
   margin-left: 7px;
   color: rgba(255, 255, 255, 0.23);
   font-size: 9px;
@@ -3002,13 +3002,13 @@
 }
 
 .landing-section--glance blockquote::before {
-  content: "“";
+  content: "â€œ";
   top: 4px;
   left: 6px;
 }
 
 .landing-section--glance blockquote::after {
-  content: "”";
+  content: "â€";
   right: 6px;
   bottom: 3px;
 }
@@ -4852,6 +4852,13 @@
   color: #e0f3e9;
 }
 
+.aastha-proposal-topbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .aastha-proposal-topbar button {
   min-height: 40px;
   padding: 10px 16px;
@@ -5047,6 +5054,65 @@
   border: 1px dashed #c8d9cd;
   border-radius: 10px;
   text-align: center;
+}
+
+.aastha-project-details-content {
+  width: min(100%, 1200px);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.aastha-project-details-id {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  background: #f5f9f6;
+  border: 1px solid #dce9df;
+  border-radius: 10px;
+}
+
+.aastha-project-details-id span {
+  color: #68766d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.aastha-project-details-id strong {
+  color: #075b43;
+  font-size: 16px;
+}
+
+.aastha-project-details-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+  margin: 0;
+  padding: 4px 20px;
+  background: #fff;
+  border: 1px solid #e4ece6;
+  border-radius: 13px;
+}
+
+.aastha-project-details-list > div {
+  display: grid;
+  gap: 5px;
+  padding: 15px 0;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.aastha-project-details-list dt {
+  color: #68766d;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.aastha-project-details-list dd {
+  margin: 0;
+  color: #1d2b24;
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .aastha-proposal-section-heading {
@@ -5445,6 +5511,11 @@
     white-space: nowrap;
   }
 
+  .aastha-proposal-topbar-actions {
+    justify-content: flex-end;
+    gap: 7px;
+  }
+
   .aastha-proposal-fields,
   .aastha-proposal-sidebar nav {
     grid-template-columns: 1fr;
@@ -5541,6 +5612,26 @@
 :root[data-theme="dark"] .aastha-proposal-project-card p,
 :root[data-theme="dark"] .aastha-proposal-project-card span {
   color: #c0cec6;
+}
+
+:root[data-theme="dark"] .aastha-project-details-id,
+:root[data-theme="dark"] .aastha-project-details-list {
+  background: #202f29;
+  border-color: #35483f;
+}
+
+:root[data-theme="dark"] .aastha-project-details-id strong,
+:root[data-theme="dark"] .aastha-project-details-list dd {
+  color: #b8e8d7;
+}
+
+:root[data-theme="dark"] .aastha-project-details-id span,
+:root[data-theme="dark"] .aastha-project-details-list dt {
+  color: #c0cec6;
+}
+
+:root[data-theme="dark"] .aastha-project-details-list > div {
+  border-color: #35483f;
 }
 
 :root[data-theme="dark"] .aastha-project-inventory-empty {
@@ -5904,6 +5995,12 @@
   .ia-table-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .aastha-project-details-list {
+    grid-template-columns: 1fr;
+    padding-right: 14px;
+    padding-left: 14px;
   }
 
   .ia-form-fields,

@@ -43,8 +43,11 @@ function UserDashboard() {
   const dashboardQuery = searchParams.toString();
   const dashboardQuerySuffix = dashboardQuery ? `?${dashboardQuery}` : "";
   const showInventory = () => navigate(`/dashboard/${userType}/inventory${dashboardQuerySuffix}`);
-  const createInventory = () => navigate(`/dashboard/${userType}${dashboardQuerySuffix}`);
+  const createInventory = () => navigate(`/dashboard/${userType}/create${dashboardQuerySuffix}`);
   const viewProject = (selectedProjectId) => navigate(
+    `/dashboard/${userType}/project/${encodeURIComponent(selectedProjectId)}/details${dashboardQuerySuffix}`
+  );
+  const continueProject = (selectedProjectId) => navigate(
     `/dashboard/${userType}/proposal/${encodeURIComponent(selectedProjectId)}${dashboardQuerySuffix}`
   );
 
@@ -80,7 +83,10 @@ function UserDashboard() {
   }
 
   if (userType === "implementingAgency") {
-    if (location.pathname.endsWith("/inventory")) {
+    if (
+      location.pathname.endsWith("/inventory") ||
+      location.pathname === `/dashboard/${userType}`
+    ) {
       return (
         <AasthaVanProjectInventory
           schemeName={selectedSchemeName}
@@ -101,7 +107,11 @@ function UserDashboard() {
         schemeName={selectedSchemeName}
         schemeCode={selectedSchemeCode}
         initialProjectId={projectId}
+        startFresh={location.pathname.endsWith("/create")}
+        initialShowProjectDetails={location.pathname.endsWith("/details")}
         onShowInventory={showInventory}
+        onOpenProjectDetails={() => viewProject(projectId)}
+        onContinueProject={() => continueProject(projectId)}
         onLogout={() => {
           sessionStorage.removeItem("campaJwt");
           navigate("/login");
