@@ -9,7 +9,14 @@ import tigerImage from "../assets/tigers.jpg";
 import wildBuffaloImage from "../assets/wild_bufaalo.jpg";
 import rhinoImage from "../assets/rhino image.jpg";
 
-const userTypes = ["implementingAgency", "programDivision", "nationalAuthority", "hod"];
+const userTypes = ["implementingAgency", "programDivision", "nationalAuthority", "hod", "state_hod"];
+const roleCodes = {
+  implementingAgency: "IA",
+  programDivision: "PD",
+  nationalAuthority: "NATIONAL_AUTHORITY",
+  hod: "HOD",
+  state_hod: "STATE_HOD"
+};
 const registerableUserTypes = ["implementingAgency", "programDivision"];
 const captchaCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -44,17 +51,61 @@ function getLoginErrorMessage(error) {
   return `Unable to log in: ${message}`;
 }
 
+function getRoleOptions(response) {
+  const roles = Array.isArray(response)
+    ? response
+    : Array.isArray(response?.data)
+      ? response.data
+      : Array.isArray(response?.data?.roles)
+        ? response.data.roles
+        : Array.isArray(response?.roles)
+          ? response.roles
+          : null;
+
+  if (!roles) {
+    throw new Error("The roles API returned unexpected data.");
+  }
+
+  const rolesByKey = new Map(userTypes.map((role) => [role.toLowerCase().replace(/[_\s-]/g, ""), role]));
+  const rolesByCode = {
+    IA: "implementingAgency",
+    PD: "programDivision",
+    NATIONAL_AUTHORITY: "nationalAuthority",
+    HOD: "hod",
+    STATE_HOD: "state_hod"
+  };
+  return roles.filter((role) => typeof role === "string" || role?.isActive !== false).map((role) => {
+    const roleName = typeof role === "string"
+      ? role
+      : rolesByCode[role?.roleCode] || role?.roleName || role?.role || role?.name;
+    const normalizedRole = typeof roleName === "string"
+      ? rolesByKey.get(roleName.toLowerCase().replace(/[_\s-]/g, ""))
+      : null;
+
+    if (!normalizedRole) {
+      throw new Error("The roles API returned an unsupported role.");
+    }
+    return normalizedRole;
+  });
+}
+
 function Login() {
   const { language } = useLanguage();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryUserType = searchParams.get("userType");
-  const [selectedRole, setSelectedRole] = useState(
-    () => userTypes.includes(queryUserType) ? queryUserType : "implementingAgency"
-  );
-  const userType = userTypes.includes(queryUserType) ? queryUserType : selectedRole;
   const roleSelectionRequired = searchParams.get("scope") === "state-central" && !queryUserType;
   const isStateSchemeLogin = ["state", "state-central"].includes(searchParams.get("scope"));
+  const [selectedRole, setSelectedRole] = useState(
+    () => userTypes.includes(queryUserType) ? queryUserType : roleSelectionRequired ? "" : "implementingAgency"
+  );
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(roleSelectionRequired);
+  const [rolesError, setRolesError] = useState("");
+  const [divisionOrganizations, setDivisionOrganizations] = useState([]);
+  const [registrationMappingsLoading, setRegistrationMappingsLoading] = useState(false);
+  const [registrationMappingsError, setRegistrationMappingsError] = useState("");
+  const userType = userTypes.includes(queryUserType) ? queryUserType : selectedRole;
   const [loginError, setLoginError] = useState("");
   const [loginSaving, setLoginSaving] = useState(false);
   const [captchaCode, setCaptchaCode] = useState(createCaptcha);
@@ -87,8 +138,96 @@ function Login() {
     implementingAgency: translations[language].implementingAgency,
     programDivision: translations[language].programDivision,
     hod: translations[language].hod,
-    nationalAuthority: "National CAMPA"
+    nationalAuthority: "National CAMPA",
+    state_hod: "State HOD"
   };
+  const registrationOrganizationOptions = Array.from(
+    new Map(
+      divisionOrganizations.map((item) => [
+        String(item.organizationId),
+        { id: String(item.organizationId), name: item.organizationName }
+      ])
+    ).values()
+  ).sort((first, second) => first.name.localeCompare(second.name));
+  const registrationProgramDivisionOptions = divisionOrganizations
+    .filter((item) => String(item.organizationId) === registrationForm.organizationId)
+    .filter((item, index, matches) =>
+      matches.findIndex((match) => String(match.programDivisionId) === String(item.programDivisionId)) === index
+    )
+    .sort((first, second) => first.divisionName.localeCompare(second.divisionName));
+  const allProgramDivisionOptions = divisionOrganizations
+    .filter((item, index, matches) =>
+      matches.findIndex((match) => String(match.programDivisionId) === String(item.programDivisionId)) === index
+    )
+    .sort((first, second) => first.divisionName.localeCompare(second.divisionName));
+
+  useEffect(() => {
+    if (!roleSelectionRequired) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+
+    fetch(apiUrls.roles, { signal: controller.signal })
+      .then(readApiResponse)
+      .then((response) => response.json())
+      .then((response) => {
+        const roles = getRoleOptions(response);
+        if (roles.length === 0) {
+          throw new Error("The roles API returned no roles.");
+        }
+        setAvailableRoles(roles);
+        setRolesError("");
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setRolesError(`Unable to load roles: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setRolesLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [roleSelectionRequired]);
+
+  useEffect(() => {
+    if (!registrationOpen || !registerableUserTypes.includes(userType)) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    fetch(apiUrls.programDivisionOrganizations, { signal: controller.signal })
+      .then(readApiResponse)
+      .then((response) => response.json())
+      .then((mappings) => {
+        if (!Array.isArray(mappings) || mappings.some((item) =>
+          !item ||
+          item.organizationId == null ||
+          typeof item.organizationName !== "string" ||
+          item.programDivisionId == null ||
+          typeof item.divisionName !== "string"
+        )) {
+          throw new Error("The programme division and organization API returned unexpected data.");
+        }
+        setDivisionOrganizations(mappings);
+        setRegistrationMappingsError("");
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setRegistrationMappingsError(`Unable to load organizations and programme divisions: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setRegistrationMappingsLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [registrationOpen, userType]);
 
   useEffect(() => {
     if (!registrationOpen || !registerableUserTypes.includes(userType)) {
@@ -175,29 +314,43 @@ function Login() {
     setRegistrationError("");
     setRegistrationMessage("");
 
-    const organization = userType === "implementingAgency"
-      ? registrationMetadata?.organizations.find((item) =>
-        item.organizationType === "IMPLEMENTING_AGENCY" &&
-        item.organizationId === Number(registrationForm.organizationId) &&
-        item.isActive
-      )
-      : null;
-    const payload = {
-      officerName: registrationForm.officerName,
-      designation: registrationForm.designation,
-      email: registrationForm.email,
-      mobile: registrationForm.mobile,
-      password: registrationForm.password,
-      organizationId: Number(
-        userType === "implementingAgency" ? organization?.organizationId : registrationForm.organizationId
-      )
-    };
-
     try {
-      if (!payload.organizationId) {
-        throw new Error("The selected programme division is not linked to an organization.");
+      if (!["implementingAgency", "programDivision"].includes(userType)) {
+        throw new Error("Registration is not available for the selected role.");
       }
-      const response = await fetch(apiUrls.nodalOfficerRegistration, {
+      const isImplementingAgency = userType === "implementingAgency";
+      const organizationId = Number(registrationForm.organizationId);
+      const programDivisionId = Number(registrationForm.programDivisionId);
+
+      if (isImplementingAgency) {
+        if (!Number.isSafeInteger(organizationId) || organizationId <= 0) {
+          throw new Error("Select a valid implementing agency.");
+        }
+        if (!registrationOrganizationOptions.some(
+          (organization) => Number(organization.id) === organizationId
+        )) {
+          throw new Error("The selected implementing agency is not available.");
+        }
+      }
+      const availableDivisions = isImplementingAgency
+        ? registrationProgramDivisionOptions
+        : allProgramDivisionOptions;
+      if (!availableDivisions.some((division) => division.programDivisionId === programDivisionId)) {
+        throw new Error("Select a programme division.");
+      }
+      const payload = {
+        roleCode: roleCodes[userType],
+        programDivisionId,
+        fullName: registrationForm.officerName,
+        designation: registrationForm.designation,
+        email: registrationForm.email,
+        mobile: registrationForm.mobile,
+        password: registrationForm.password
+      };
+      if (isImplementingAgency) {
+        payload.organizationId = organizationId;
+      }
+      const response = await fetch(apiUrls.register, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -225,28 +378,6 @@ function Login() {
   const selectedImplementingAgency = registrationMetadata?.organizations.find(
     (organization) => organization.organizationId === Number(registrationForm.organizationId)
   );
-  const registrationOptions = userType === "programDivision"
-    ? registrationMetadata?.programDivisions.flatMap((division) => {
-      const organization = registrationMetadata.organizations.find(
-        (item) => item.programDivisionId === division.programDivisionId
-      );
-      return organization
-        ? [{ id: organization.organizationId, label: division.divisionName }]
-        : [];
-    }) || []
-    : registrationMetadata?.organizations
-      .filter((organization) =>
-        organization.organizationType === "IMPLEMENTING_AGENCY" &&
-        ["CENTRAL_IA", "STATE_IA"].includes(organization.iaCategory) &&
-        organization.isActive
-      )
-      .map((organization) => ({ id: organization.organizationId, label: organization.organizationName })) || [];
-  const implementingAgencyProgramDivisions = selectedImplementingAgency
-    ? registrationMetadata?.programDivisions.filter(
-      (division) => division.programDivisionId === selectedImplementingAgency.programDivisionId
-    ) || []
-    : [];
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!isStateSchemeLogin) {
@@ -298,7 +429,7 @@ function Login() {
       sessionStorage.setItem("campaJwt", jwt);
       if (userTypes.includes(userType)) {
         const dashboardParams = new URLSearchParams();
-        ["scope", "schemeCode", "schemeName", "organizationId", "organizationName", "programDivisionId", "programDivisionName"].forEach((key) => {
+        ["scope", "schemeId", "schemeCode", "schemeName", "organizationId", "organizationName", "programDivisionId", "programDivisionName"].forEach((key) => {
           const value = searchParams.get(key);
           if (value) {
             dashboardParams.set(key, value);
@@ -353,110 +484,158 @@ function Login() {
           </p>
 
           {!registrationOpen && roleSelectionRequired && (
-            <fieldset className="login-role-selection">
-              <legend>Select your role</legend>
-              {userTypes.map((role) => (
-                <label
-                  className={`login-role-option${userType === role ? " login-role-option--selected" : ""}`}
-                  key={role}
+            <div className="login-role-selection">
+              {rolesLoading && <p role="status">Loading roles...</p>}
+              {rolesError && <p className="captcha-error" role="alert">{rolesError}</p>}
+              {!rolesLoading && !rolesError && (
+                <select
+                  className="login-modal-input"
+                  aria-label="Select your role"
+                  value={roleCodes[selectedRole] || ""}
+                  onChange={(event) => {
+                    const selectedRoleCode = event.target.value;
+                    const role = userTypes.find((userTypeOption) => roleCodes[userTypeOption] === selectedRoleCode);
+                    setSelectedRole(role || "");
+                    setLoginError("");
+                  }}
                 >
-                  <input
-                    type="radio"
-                    name="login-role"
-                    value={role}
-                    checked={userType === role}
-                    onChange={() => {
-                      setSelectedRole(role);
-                      setLoginError("");
-                    }}
-                  />
-                  <span>{roleLabels[role]}</span>
-                </label>
-              ))}
-            </fieldset>
+                  <option value="">Select your role</option>
+                  {availableRoles.map((role) => (
+                    <option key={role} value={roleCodes[role]}>{roleLabels[role]}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           )}
-
-            {registrationOpen ? (
-              <form onSubmit={handleRegistrationSubmit}>
-                {registrationLoading && <p role="status">Loading registration options...</p>}
-                {registrationError && <p className="captcha-error" role="alert">{registrationError}</p>}
-                {districtError && <p className="captcha-error" role="alert">{districtError}</p>}
-                {!registrationLoading && registrationMetadata && (
-                  <>
-                    {userType === "implementingAgency" && (
+          {registrationOpen ? (
+                  <form onSubmit={handleRegistrationSubmit}>
+                    {registrationLoading && <p role="status">Loading registration options...</p>}
+                    {registrationError && <p className="captcha-error" role="alert">{registrationError}</p>}
+                    {districtError && <p className="captcha-error" role="alert">{districtError}</p>}
+                    {registrationMappingsLoading && <p role="status">Loading organizations...</p>}
+                    {registrationMappingsError && <p className="captcha-error" role="alert">{registrationMappingsError}</p>}
+                    {!registrationLoading && registrationMetadata && (
                       <>
-                        <label className="visually-hidden" htmlFor="registration-organization">
-                          Implementing agency
-                        </label>
-                        <select
-                          id="registration-organization"
-                          className="login-modal-input"
-                          name="organizationId"
-                          value={registrationForm.organizationId}
-                          onChange={(event) => {
-                            const { value } = event.target;
-                            setRegistrationForm((previous) => ({
-                              ...previous,
-                              organizationId: value,
-                              stateCode: "",
-                              districtId: "",
-                              programDivisionId: ""
-                            }));
-                            setDistricts([]);
-                            setDistrictLoading(false);
-                            setDistrictError("");
-                            setRegistrationError("");
-                            setRegistrationMessage("");
-                          }}
-                          required
-                        >
-                          <option value="">Select implementing agency</option>
-                          {registrationOptions.map((option) => (
-                            <option key={option.id} value={option.id}>{option.label}</option>
-                          ))}
-                        </select>
-                        {selectedImplementingAgency?.iaCategory === "STATE_IA" && (
+                        {!registrationMappingsLoading && !registrationMappingsError && (
                           <>
-                            <label className="visually-hidden" htmlFor="registration-state">State</label>
+                        {userType === "programDivision" ? (
+                          <>
+                            <label className="visually-hidden" htmlFor="registration-program-division">
+                              Programme division
+                            </label>
                             <select
-                              id="registration-state"
+                              id="registration-program-division"
                               className="login-modal-input"
-                              name="stateCode"
-                              value={registrationForm.stateCode}
+                              name="programDivisionId"
+                              value={registrationForm.programDivisionId}
+                              onChange={handleRegistrationFieldChange}
+                              required
+                            >
+                              <option value="">Select programme division</option>
+                              {allProgramDivisionOptions.map((division) => (
+                                <option key={division.programDivisionId} value={division.programDivisionId}>
+                                  {division.divisionName}
+                                </option>
+                              ))}
+                            </select>
+                          </>
+                        ) : (
+                          <>
+                            <label className="visually-hidden" htmlFor="registration-organization">
+                              Organization
+                            </label>
+                            <select
+                              id="registration-organization"
+                              className="login-modal-input"
+                              name="organizationId"
+                              value={registrationForm.organizationId}
                               onChange={(event) => {
                                 const { value } = event.target;
                                 setRegistrationForm((previous) => ({
                                   ...previous,
-                                  stateCode: value,
-                                  districtId: ""
+                                  organizationId: value,
+                                  stateCode: "",
+                                  districtId: "",
+                                  programDivisionId: ""
                                 }));
                                 setDistricts([]);
-                                setDistrictLoading(Boolean(value));
+                                setDistrictLoading(false);
                                 setDistrictError("");
+                                setRegistrationError("");
+                                setRegistrationMessage("");
                               }}
                               required
                             >
-                              <option value="">Select state</option>
-                              {registrationMetadata.states.map((state) => (
-                                <option key={state.stateCode} value={state.stateCode}>{state.stateName}</option>
+                              <option value="">Select organization</option>
+                              {registrationOrganizationOptions.map((organizationOption) => (
+                                <option key={organizationOption.id} value={organizationOption.id}>
+                                  {organizationOption.name}
+                                </option>
                               ))}
                             </select>
-                            <label className="visually-hidden" htmlFor="registration-district">District</label>
+                            {userType === "implementingAgency" && selectedImplementingAgency?.iaCategory === "STATE_IA" && (
+                              <>
+                                <label className="visually-hidden" htmlFor="registration-state">State</label>
+                                <select
+                                  id="registration-state"
+                                  className="login-modal-input"
+                                  name="stateCode"
+                                  value={registrationForm.stateCode}
+                                  onChange={(event) => {
+                                    const { value } = event.target;
+                                    setRegistrationForm((previous) => ({
+                                      ...previous,
+                                      stateCode: value,
+                                      districtId: ""
+                                    }));
+                                    setDistricts([]);
+                                    setDistrictLoading(Boolean(value));
+                                    setDistrictError("");
+                                  }}
+                                  required
+                                >
+                                  <option value="">Select state</option>
+                                  {registrationMetadata.states.map((state) => (
+                                    <option key={state.stateCode} value={state.stateCode}>{state.stateName}</option>
+                                  ))}
+                                </select>
+                                <label className="visually-hidden" htmlFor="registration-district">District</label>
+                                <select
+                                  id="registration-district"
+                                  className="login-modal-input"
+                                  name="districtId"
+                                  value={registrationForm.districtId}
+                                  onChange={handleRegistrationFieldChange}
+                                  disabled={!registrationForm.stateCode || districtLoading}
+                                  required
+                                >
+                                  <option value="">
+                                    {districtLoading ? "Loading districts..." : "Select district"}
+                                  </option>
+                                  {districts.map((district) => (
+                                    <option key={district.districtId} value={district.districtId}>
+                                      {district.districtName}
+                                    </option>
+                                  ))}
+                                </select>
+                              </>
+                            )}
+                            <label className="visually-hidden" htmlFor="registration-program-division">
+                              Programme division
+                            </label>
                             <select
-                              id="registration-district"
+                              id="registration-program-division"
                               className="login-modal-input"
-                              name="districtId"
-                              value={registrationForm.districtId}
+                              name="programDivisionId"
+                              value={registrationForm.programDivisionId}
                               onChange={handleRegistrationFieldChange}
-                              disabled={!registrationForm.stateCode || districtLoading}
                               required
+                              disabled={!registrationForm.organizationId}
                             >
-                              <option value="">
-                                {districtLoading ? "Loading districts..." : "Select district"}
-                              </option>
-                              {districts.map((district) => (
-                                <option key={district.districtId} value={district.districtId}>
-                                  {district.districtName}
+                              <option value="">Select programme division</option>
+                              {registrationProgramDivisionOptions.map((division) => (
+                                <option key={division.programDivisionId} value={division.programDivisionId}>
+                                  {division.divisionName}
                                 </option>
                               ))}
                             </select>
@@ -464,31 +643,7 @@ function Login() {
                         )}
                       </>
                     )}
-                    <label className="visually-hidden" htmlFor="registration-program-division">
-                      Programme division
-                    </label>
-                    <select
-                      id="registration-program-division"
-                      className="login-modal-input"
-                      name={userType === "programDivision" ? "organizationId" : "programDivisionId"}
-                      value={userType === "programDivision"
-                        ? registrationForm.organizationId
-                        : registrationForm.programDivisionId}
-                      onChange={handleRegistrationFieldChange}
-                      required
-                      disabled={userType === "implementingAgency" && !selectedImplementingAgency}
-                    >
-                      <option value="">Select programme division</option>
-                      {(userType === "implementingAgency"
-                        ? implementingAgencyProgramDivisions.map((division) => ({
-                          id: division.programDivisionId,
-                          label: division.divisionName
-                        }))
-                        : registrationOptions).map((option) => (
-                        <option key={option.id} value={option.id}>{option.label}</option>
-                      ))}
-                    </select>
-                    {userType === "programDivision" && registrationOptions.length === 0 && (
+                    {userType === "implementingAgency" && registrationOrganizationOptions.length === 0 && !registrationMappingsLoading && !registrationMappingsError && (
                       <p className="captcha-error" role="alert">No organizations are available for this user type.</p>
                     )}
                     <input
@@ -541,20 +696,30 @@ function Login() {
                     <button
                       className="login-submit"
                       type="submit"
-                      disabled={registrationSaving || (userType === "programDivision" && registrationOptions.length === 0)}
+                      disabled={
+                        registrationSaving ||
+                        registrationLoading ||
+                        registrationMappingsLoading ||
+                        Boolean(registrationMappingsError) ||
+                        (userType === "programDivision"
+                          ? allProgramDivisionOptions.length === 0
+                          : registrationOrganizationOptions.length === 0 || !registrationForm.organizationId) ||
+                        !registrationForm.programDivisionId
+                      }
                     >
-                      {registrationSaving ? "Saving..." : "Save Nodal Officer Details"}
+                      {registrationSaving ? "Saving..." : "Register"}
                     </button>
                   </>
                 )}
                 <p className="login-register-prompt">
-                  <button type="button" onClick={() => { setRegistrationOpen(false); setRegistrationError(""); setRegistrationMessage(""); }}>
+                  <button type="button" onClick={() => { setRegistrationOpen(false); setRegistrationError(""); setRegistrationMappingsError(""); setRegistrationMessage(""); }}>
                     Back to login
                   </button>
                 </p>
               </form>
             ) : (
-            <form onSubmit={handleSubmit}>
+              <>
+              <form onSubmit={handleSubmit}>
               <label className="visually-hidden" htmlFor="login-username">
                 {translations[language].username}
               </label>
@@ -638,16 +803,36 @@ function Login() {
                 </p>
               )}
               {loginError && <p className="captcha-error" role="alert">{loginError}</p>}
-              <button className="login-submit" type="submit" disabled={loginSaving || !isStateSchemeLogin}>
+              <button
+                className="login-submit"
+                type="submit"
+                disabled={loginSaving || !isStateSchemeLogin || (roleSelectionRequired && (
+                  !selectedRole ||
+                  rolesLoading ||
+                  Boolean(rolesError)
+                ))}
+              >
                 {loginSaving ? "Logging in..." : t("loginNow")}
               </button>
               {registerableUserTypes.includes(userType) && (
                 <p className="login-register-prompt">
                   {t("noAccount")}{" "}
-                  <button type="button" onClick={() => setRegistrationOpen(true)}>{t("registerNow")}</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegistrationLoading(true);
+                      setRegistrationMappingsLoading(true);
+                      setRegistrationError("");
+                      setRegistrationMappingsError("");
+                      setRegistrationOpen(true);
+                    }}
+                  >
+                    {t("registerNow")}
+                  </button>
                 </p>
               )}
           </form>
+          </>
           )}
         </div>
         {registrationMessage && (

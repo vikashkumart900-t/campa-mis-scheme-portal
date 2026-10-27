@@ -5,8 +5,9 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 import AasthaVanProposalForm from "../features/aastha-van/AasthaVanProposalForm";
 import AasthaVanProjectInventory from "../features/aastha-van/AasthaVanProjectInventory";
 
-const userTypes = ["implementingAgency", "programDivision", "nationalAuthority", "hod"];
+const userTypes = ["implementingAgency", "programDivision", "nationalAuthority", "hod", "state_hod"];
 const sessionTimeoutSeconds = 60 * 60;
+const additionalRoleLabels = { state_hod: "State HOD" };
 
 function PlaceholderDashboard({ userType }) {
   const { language } = useLanguage();
@@ -19,7 +20,7 @@ function PlaceholderDashboard({ userType }) {
   return (
     <main className="user-dashboard-page">
       <section className="user-dashboard-card">
-        <h1>{translations[language][userType]}</h1>
+        <h1>{translations[language][userType] || additionalRoleLabels[userType]}</h1>
         <p>Your workspace is ready. Forms and dashboard features will be added here.</p>
         <div className="user-dashboard-actions">
           <Link className="user-dashboard-back" to="/login">Back to home</Link>

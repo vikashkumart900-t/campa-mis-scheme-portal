@@ -4,8 +4,10 @@ const campaApiBaseUrl = `${apiBaseUrl}/campa`;
 export const apiUrls = {
   activeSchemes: `${campaApiBaseUrl}/active-schemes`,
   schemeDetails: (schemeId) => `${campaApiBaseUrl}/${encodeURIComponent(schemeId)}/details`,
+  roles: `${campaApiBaseUrl}/getAllRoles`,
+  programDivisionOrganizations: `${campaApiBaseUrl}/program-division-organizations`,
   registrationDropdownMetadata: `${campaApiBaseUrl}/dropdown-metadata`,
   registrationDistricts: (stateCode) => `${campaApiBaseUrl}/districts/${encodeURIComponent(stateCode)}`,
-  nodalOfficerRegistration: `${campaApiBaseUrl}/nodal-officer`,
+  register: `${campaApiBaseUrl}/register`,
   login: `${campaApiBaseUrl}/login`
 };
