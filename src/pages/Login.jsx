@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { FileText, Landmark, Leaf, UsersRound, UserRoundCog } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translateText, translations } from "../i18n";
 import { apiUrls } from "../api/urls";
@@ -9,15 +10,25 @@ import tigerImage from "../assets/tigers.jpg";
 import wildBuffaloImage from "../assets/wild_bufaalo.jpg";
 import rhinoImage from "../assets/rhino image.jpg";
 
-const userTypes = ["implementingAgency", "programDivision", "nationalAuthority", "hod", "state_hod"];
+const userTypes = ["implementingAgency", "hod", "state_hod", "districtForestOfficer", "programDivision", "nationalAuthority"];
 const roleCodes = {
   implementingAgency: "IA",
-  programDivision: "PD",
-  nationalAuthority: "NATIONAL_AUTHORITY",
   hod: "HOD",
-  state_hod: "STATE_HOD"
+  state_hod: "STATE_HOD",
+  districtForestOfficer: "DFO",
+  programDivision: "PD",
+  nationalAuthority: "NATIONAL_AUTHORITY"
 };
+const roleTileOrder = [
+  "implementingAgency",
+  "hod",
+  "state_hod",
+  "districtForestOfficer",
+  "programDivision",
+  "nationalAuthority"
+];
 const registerableUserTypes = ["implementingAgency", "programDivision"];
+const misLoginUserTypes = ["implementingAgency", "programDivision", "hod"];
 const captchaCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function createCaptcha() {
@@ -69,10 +80,11 @@ function getRoleOptions(response) {
   const rolesByKey = new Map(userTypes.map((role) => [role.toLowerCase().replace(/[_\s-]/g, ""), role]));
   const rolesByCode = {
     IA: "implementingAgency",
-    PD: "programDivision",
-    NATIONAL_AUTHORITY: "nationalAuthority",
     HOD: "hod",
-    STATE_HOD: "state_hod"
+    STATE_HOD: "state_hod",
+    DFO: "districtForestOfficer",
+    PD: "programDivision",
+    NATIONAL_AUTHORITY: "nationalAuthority"
   };
   return roles.filter((role) => typeof role === "string" || role?.isActive !== false).map((role) => {
     const roleName = typeof role === "string"
@@ -102,6 +114,7 @@ function Login() {
   const [availableRoles, setAvailableRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(roleSelectionRequired);
   const [rolesError, setRolesError] = useState("");
+  const [roleSelectionComplete, setRoleSelectionComplete] = useState(false);
   const [divisionOrganizations, setDivisionOrganizations] = useState([]);
   const [registrationMappingsLoading, setRegistrationMappingsLoading] = useState(false);
   const [registrationMappingsError, setRegistrationMappingsError] = useState("");
@@ -135,12 +148,33 @@ function Login() {
   });
   const t = (key) => translateText(key, language);
   const roleLabels = {
-    implementingAgency: translations[language].implementingAgency,
-    programDivision: translations[language].programDivision,
-    hod: translations[language].hod,
-    nationalAuthority: "National CAMPA",
-    state_hod: "State HOD"
+    implementingAgency: "Implementing Agency (IA)",
+    hod: "Head of Division (HOD)",
+    state_hod: "Chief Wildlife Warden (CWLW)",
+    districtForestOfficer: "District Forest Officer (DFO)",
+    programDivision: "Programme Division (PD)",
+    nationalAuthority: "National CAMPA"
   };
+  const roleDescriptions = {
+    implementingAgency: "For Implementing Agency users at central level.",
+    hod: "For HOD users at central level.",
+    state_hod: "For State HOD (CWLW) users at state level.",
+    districtForestOfficer: "For DFO users at state level.",
+    programDivision: "For Programme Division users.",
+    nationalAuthority: "For National CAMPA users (Authority)."
+  };
+  const roleIcons = {
+    implementingAgency: Landmark,
+    hod: Landmark,
+    state_hod: UsersRound,
+    districtForestOfficer: UserRoundCog,
+    programDivision: FileText,
+    nationalAuthority: Leaf
+  };
+  const roleTileOptions = roleTileOrder
+    .filter((role) => availableRoles.includes(role))
+    .map((role) => ({ role, label: roleLabels[role], description: roleDescriptions[role] }));
+  const SelectedRoleIcon = roleIcons[selectedRole];
   const registrationOrganizationOptions = Array.from(
     new Map(
       divisionOrganizations.map((item) => [
@@ -385,7 +419,7 @@ function Login() {
       return;
     }
 
-    if (captchaInput.trim().toUpperCase() !== captchaCode) {
+    if (!(roleSelectionRequired && roleSelectionComplete) && captchaInput.trim().toUpperCase() !== captchaCode) {
       setLoginError("CAPTCHA does not match. Please try again.");
       setCaptchaInput("");
       setCaptchaCode(createCaptcha());
@@ -399,7 +433,10 @@ function Login() {
     setLoginSaving(true);
 
     try {
-      const response = await fetch(apiUrls.login, {
+      const loginUrl = misLoginUserTypes.includes(userType)
+        ? apiUrls.misLogin
+        : apiUrls.pariveshLogin;
+      const response = await fetch(loginUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
@@ -421,12 +458,20 @@ function Login() {
         throw new Error(result.message || "Login failed.");
       }
 
-      const jwt = result?.data?.jwt;
-      if (typeof jwt !== "string" || !jwt.trim()) {
+      const jwt = result?.data?.jwt
+        || result?.data?.token
+        || result?.jwt
+        || result?.token;
+      const loginSucceeded = result?.message === "Login successful" || result?.success === true;
+
+      if (!loginSucceeded && (typeof jwt !== "string" || !jwt.trim())) {
         throw new Error("The login API response did not include an access token.");
       }
 
-      sessionStorage.setItem("campaJwt", jwt);
+      sessionStorage.setItem("campaJwt", typeof jwt === "string" && jwt.trim() ? jwt : "authenticated");
+      if (typeof result?.email === "string" && result.email.trim()) {
+        sessionStorage.setItem("campaUserEmail", result.email.trim());
+      }
       if (userTypes.includes(userType)) {
         const dashboardParams = new URLSearchParams();
         ["scope", "schemeId", "schemeCode", "schemeName", "organizationId", "organizationName", "programDivisionId", "programDivisionName"].forEach((key) => {
@@ -453,7 +498,7 @@ function Login() {
       }}
     >
       <section
-        className="login-modal"
+        className={`login-modal${roleSelectionRequired && !roleSelectionComplete ? " login-modal--role-selection" : ""}${roleSelectionRequired && roleSelectionComplete ? " login-modal--role-login" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="login-modal-title"
@@ -467,47 +512,90 @@ function Login() {
           ×
         </button>
 
-        <div className="login-photo-grid" aria-hidden="true">
-          <img className="login-photo-deer" src={wildBuffaloImage} alt="" />
-          <img className="login-photo-forest" src={asthavanImage} alt="" />
-          <img className="login-photo-tiger" src={tigerImage} alt="" />
-          <img className="login-photo-elephants" src={elephantImage} alt="" />
-          <img className="login-photo-work" src={rhinoImage} alt="" />
-          <img className="login-photo-water" src={asthavanImage} alt="" />
-        </div>
-        <div className="login-modal-content">
-          <h1 id="login-modal-title">
-            {registrationOpen ? "Nodal Officer Registration" : translations[language].login}
-          </h1>
-          <p className="login-modal-subtitle">
-            {registrationOpen ? "Enter your organization and nodal officer details." : t("loginToAccount")}
-          </p>
-
-          {!registrationOpen && roleSelectionRequired && (
-            <div className="login-role-selection">
-              {rolesLoading && <p role="status">Loading roles...</p>}
-              {rolesError && <p className="captcha-error" role="alert">{rolesError}</p>}
-              {!rolesLoading && !rolesError && (
-                <select
-                  className="login-modal-input"
-                  aria-label="Select your role"
-                  value={roleCodes[selectedRole] || ""}
-                  onChange={(event) => {
-                    const selectedRoleCode = event.target.value;
-                    const role = userTypes.find((userTypeOption) => roleCodes[userTypeOption] === selectedRoleCode);
-                    setSelectedRole(role || "");
-                    setLoginError("");
-                  }}
-                >
-                  <option value="">Select your role</option>
-                  {availableRoles.map((role) => (
-                    <option key={role} value={roleCodes[role]}>{roleLabels[role]}</option>
-                  ))}
-                </select>
-              )}
+        {roleSelectionRequired && roleSelectionComplete ? (
+          <aside className="login-selected-role" aria-label="Selected role">
+            {SelectedRoleIcon && (
+              <span className="login-selected-role-icon" aria-hidden="true">
+                <SelectedRoleIcon />
+              </span>
+            )}
+            <strong>{roleLabels[selectedRole]}</strong>
+            <span>{roleDescriptions[selectedRole]}</span>
+            <div className="login-selected-role-applicable">
+              <strong>Applicable for:</strong>
+              <span>{roleLabels[selectedRole]}</span>
             </div>
+          </aside>
+        ) : (
+          <div className="login-photo-grid" aria-hidden="true">
+            <img className="login-photo-deer" src={wildBuffaloImage} alt="" />
+            <img className="login-photo-forest" src={asthavanImage} alt="" />
+            <img className="login-photo-tiger" src={tigerImage} alt="" />
+            <img className="login-photo-elephants" src={elephantImage} alt="" />
+            <img className="login-photo-work" src={rhinoImage} alt="" />
+            <img className="login-photo-water" src={asthavanImage} alt="" />
+          </div>
+        )}
+        <div className="login-modal-content">
+          {!(roleSelectionRequired && roleSelectionComplete) && (
+            <>
+              <h1 id="login-modal-title">
+                {registrationOpen
+                  ? "Nodal Officer Registration"
+                  : roleSelectionRequired
+                    ? "Login to MIS Portal"
+                    : translations[language].login}
+              </h1>
+              <p className="login-modal-subtitle">
+                {registrationOpen
+                  ? "Enter your organization and nodal officer details."
+                  : roleSelectionRequired
+                    ? "Select your role to continue."
+                    : t("loginToAccount")}
+              </p>
+            </>
           )}
-          {registrationOpen ? (
+
+          {roleSelectionRequired && !roleSelectionComplete ? (
+            <div className="login-role-selection">
+              {rolesLoading && <p className="login-role-status" role="status">Loading roles...</p>}
+              {rolesError && <p className="captcha-error login-role-status" role="alert">{rolesError}</p>}
+              {!rolesLoading && !rolesError && roleTileOptions.map(({ role, label, description }) => {
+                const RoleIcon = roleIcons[role];
+                const isSelected = selectedRole === role;
+                return (
+                  <label
+                    key={role}
+                    className={`login-role-card${isSelected ? " login-role-card--selected" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="selectedRole"
+                      value={role}
+                      checked={isSelected}
+                      onChange={() => {
+                        setSelectedRole(role);
+                        setLoginError("");
+                      }}
+                    />
+                    <span className="login-role-card-icon" aria-hidden="true"><RoleIcon /></span>
+                    <span className="login-role-card-copy">
+                      <strong>{label}</strong>
+                      <span>{description}</span>
+                    </span>
+                  </label>
+                );
+              })}
+              <button
+                className="login-role-continue"
+                type="button"
+                disabled={!selectedRole || rolesLoading || Boolean(rolesError)}
+                onClick={() => setRoleSelectionComplete(true)}
+              >
+                Continue <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          ) : registrationOpen ? (
                   <form onSubmit={handleRegistrationSubmit}>
                     {registrationLoading && <p role="status">Loading registration options...</p>}
                     {registrationError && <p className="captcha-error" role="alert">{registrationError}</p>}
@@ -720,6 +808,15 @@ function Login() {
             ) : (
               <>
               <form onSubmit={handleSubmit}>
+              {roleSelectionRequired && roleSelectionComplete && (
+                <button
+                  className="login-back-to-roles"
+                  type="button"
+                  onClick={() => setRoleSelectionComplete(false)}
+                >
+                  <span aria-hidden="true">←</span> Back to Role Selection
+                </button>
+              )}
               <label className="visually-hidden" htmlFor="login-username">
                 {translations[language].username}
               </label>
@@ -728,7 +825,7 @@ function Login() {
                 id="login-username"
                 type="text"
                 name="username"
-                placeholder={t("enterLoginId")}
+                placeholder={translations[language].username}
                 autoComplete="username"
                 required
                 onChange={() => setLoginError("")}
@@ -738,6 +835,7 @@ function Login() {
                 {translations[language].password}
               </label>
               <div className="login-password-field">
+               
                 <input
                   className="login-modal-input"
                   id="login-password"
@@ -758,44 +856,48 @@ function Login() {
                 </button>
               </div>
 
-              <label className="login-captcha-label" htmlFor="login-captcha">
-                Enter CAPTCHA
-              </label>
-              <div className="login-captcha-row">
-                <div className="login-captcha-entry">
-                  <input
-                    className="login-modal-input"
-                    id="login-captcha"
-                    name="captcha"
-                    type="text"
-                    value={captchaInput}
-                    placeholder="Enter CAPTCHA"
-                    autoComplete="off"
-                    maxLength={6}
-                    required
-                    onChange={(event) => {
-                      setCaptchaInput(event.target.value);
-                      setLoginError("");
-                    }}
-                  />
-                  <span className="login-captcha-challenge" aria-label={`CAPTCHA code ${captchaCode}`}>
-                    {captchaCode}
-                  </span>
-                </div>
-                <button
-                  className="login-captcha-refresh"
-                  type="button"
-                  onClick={() => {
-                    setCaptchaCode(createCaptcha());
-                    setCaptchaInput("");
-                    setLoginError("");
-                  }}
-                  aria-label="Refresh CAPTCHA"
-                  title="Refresh CAPTCHA"
-                >
-                  ↻
-                </button>
-              </div>
+              {!(roleSelectionRequired && roleSelectionComplete) && (
+                <>
+                  <label className="login-captcha-label" htmlFor="login-captcha">
+                    Enter CAPTCHA
+                  </label>
+                  <div className="login-captcha-row">
+                    <div className="login-captcha-entry">
+                      <input
+                        className="login-modal-input"
+                        id="login-captcha"
+                        name="captcha"
+                        type="text"
+                        value={captchaInput}
+                        placeholder="Enter CAPTCHA"
+                        autoComplete="off"
+                        maxLength={6}
+                        required
+                        onChange={(event) => {
+                          setCaptchaInput(event.target.value);
+                          setLoginError("");
+                        }}
+                      />
+                      <span className="login-captcha-challenge" aria-label={`CAPTCHA code ${captchaCode}`}>
+                        {captchaCode}
+                      </span>
+                    </div>
+                    <button
+                      className="login-captcha-refresh"
+                      type="button"
+                      onClick={() => {
+                        setCaptchaCode(createCaptcha());
+                        setCaptchaInput("");
+                        setLoginError("");
+                      }}
+                      aria-label="Refresh CAPTCHA"
+                      title="Refresh CAPTCHA"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                </>
+              )}
 
               {!isStateSchemeLogin && (
                 <p className="captcha-error" role="status">

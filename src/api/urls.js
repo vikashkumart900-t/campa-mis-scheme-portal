@@ -9,5 +9,6 @@ export const apiUrls = {
   registrationDropdownMetadata: `${campaApiBaseUrl}/dropdown-metadata`,
   registrationDistricts: (stateCode) => `${campaApiBaseUrl}/districts/${encodeURIComponent(stateCode)}`,
   register: `${campaApiBaseUrl}/register`,
-  login: `${campaApiBaseUrl}/login`
+  misLogin: `${campaApiBaseUrl}/mis/login`,
+  pariveshLogin: `${campaApiBaseUrl}/parivesh/login`
 };

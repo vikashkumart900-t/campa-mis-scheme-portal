@@ -5,15 +5,20 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 import AasthaVanProposalForm from "../features/aastha-van/AasthaVanProposalForm";
 import AasthaVanProjectInventory from "../features/aastha-van/AasthaVanProjectInventory";
 
-const userTypes = ["implementingAgency", "programDivision", "nationalAuthority", "hod", "state_hod"];
+const userTypes = ["implementingAgency", "hod", "state_hod", "districtForestOfficer", "programDivision", "nationalAuthority"];
 const sessionTimeoutSeconds = 60 * 60;
-const additionalRoleLabels = { state_hod: "State HOD" };
+const additionalRoleLabels = {
+  hod: "Head of Division (HOD)",
+  state_hod: "Chief Wildlife Warden (CWLW)",
+  districtForestOfficer: "District Forest Officer (DFO)"
+};
 
 function PlaceholderDashboard({ userType }) {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const logout = () => {
     sessionStorage.removeItem("campaJwt");
+    sessionStorage.removeItem("campaUserEmail");
     navigate("/login");
   };
 
