@@ -10,14 +10,14 @@ import tigerImage from "../assets/tigers.jpg";
 import wildBuffaloImage from "../assets/wild_bufaalo.jpg";
 import rhinoImage from "../assets/rhino image.jpg";
 
-const userTypes = ["implementingAgency", "hod", "state_hod", "districtForestOfficer", "programDivision", "nationalAuthority"];
+const userTypes = ["implementingAgency", "hod", "state_hod", "districtForestOfficer", "programDivision", "nationalCampa"];
 const roleCodes = {
   implementingAgency: "IA",
   hod: "HOD",
   state_hod: "STATE_HOD",
   districtForestOfficer: "DFO",
   programDivision: "PD",
-  nationalAuthority: "NATIONAL_AUTHORITY"
+  nationalCampa: "NATIONAL_CAMPA"
 };
 const roleTileOrder = [
   "implementingAgency",
@@ -25,7 +25,7 @@ const roleTileOrder = [
   "state_hod",
   "districtForestOfficer",
   "programDivision",
-  "nationalAuthority"
+  "nationalCampa"
 ];
 const registerableUserTypes = ["implementingAgency", "programDivision"];
 const misLoginUserTypes = ["implementingAgency", "programDivision", "hod"];
@@ -55,7 +55,11 @@ function getLoginErrorMessage(error) {
     // Keep non-JSON API errors as-is.
   }
 
-  if (/user role not authorized|unauthori[sz]ed|invalid credentials|bad credentials|incorrect (username|password)|username or password/i.test(message)) {
+  if (/user role not authorized/i.test(message)) {
+    return "This account is not authorized for the selected role. Confirm that it is assigned to NATIONAL_CAMPA.";
+  }
+
+  if (/unauthori[sz]ed|invalid credentials|bad credentials|incorrect (username|password)|username or password/i.test(message)) {
     return "Username or password is incorrect.";
   }
 
@@ -84,7 +88,7 @@ function getRoleOptions(response) {
     STATE_HOD: "state_hod",
     DFO: "districtForestOfficer",
     PD: "programDivision",
-    NATIONAL_AUTHORITY: "nationalAuthority"
+    NATIONAL_CAMPA: "nationalCampa"
   };
   return roles.filter((role) => typeof role === "string" || role?.isActive !== false).map((role) => {
     const roleName = typeof role === "string"
@@ -153,7 +157,7 @@ function Login() {
     state_hod: "Chief Wildlife Warden (CWLW)",
     districtForestOfficer: "District Forest Officer (DFO)",
     programDivision: "Programme Division (PD)",
-    nationalAuthority: "National CAMPA"
+    nationalCampa: "NATIONAL_CAMPA"
   };
   const roleDescriptions = {
     implementingAgency: "For Implementing Agency users at central level.",
@@ -161,7 +165,7 @@ function Login() {
     state_hod: "For State HOD (CWLW) users at state level.",
     districtForestOfficer: "For DFO users at state level.",
     programDivision: "For Programme Division users.",
-    nationalAuthority: "For National CAMPA users (Authority)."
+    nationalCampa: "For National CAMPA users (Authority)."
   };
   const roleIcons = {
     implementingAgency: Landmark,
@@ -169,7 +173,7 @@ function Login() {
     state_hod: UsersRound,
     districtForestOfficer: UserRoundCog,
     programDivision: FileText,
-    nationalAuthority: Leaf
+    nationalCampa: Leaf
   };
   const roleTileOptions = roleTileOrder
     .filter((role) => availableRoles.includes(role))
@@ -433,9 +437,10 @@ function Login() {
     setLoginSaving(true);
 
     try {
-      const loginUrl = misLoginUserTypes.includes(userType)
-        ? apiUrls.misLogin
-        : apiUrls.pariveshLogin;
+      const usesPariveshLogin = searchParams.get("scope") === "state" || !misLoginUserTypes.includes(userType);
+      const loginUrl = usesPariveshLogin
+        ? apiUrls.pariveshLogin
+        : apiUrls.misLogin;
       const response = await fetch(loginUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -456,6 +461,29 @@ function Login() {
       }
       if (result?.status !== undefined && Number(result.status) !== 200) {
         throw new Error(result.message || "Login failed.");
+      }
+
+      if (usesPariveshLogin) {
+        const roleAbbreviations = [
+          result?.data?.roleAbbreviation,
+          result?.roleAbbreviation,
+          ...(Array.isArray(result?.data?.roleNameAbbreviationDtos)
+            ? result.data.roleNameAbbreviationDtos.map((role) => role?.roleAbbreviation)
+            : [])
+        ]
+          .filter((roleAbbreviation) => typeof roleAbbreviation === "string")
+          .map((roleAbbreviation) => roleAbbreviation.trim().toUpperCase())
+          .filter(Boolean);
+        const expectedRoleCode = roleCodes[userType];
+        if (!expectedRoleCode || !roleAbbreviations.includes(expectedRoleCode)) {
+          sessionStorage.removeItem("campaJwt");
+          sessionStorage.removeItem("campaUserEmail");
+          throw new Error(
+            roleAbbreviations.length > 0
+              ? `Selected role does not match the Parivesh role(s) (${roleAbbreviations.join(", ")}).`
+              : "The Parivesh login response did not include a roleAbbreviation, so the selected role could not be verified."
+          );
+        }
       }
 
       const jwt = result?.data?.jwt
