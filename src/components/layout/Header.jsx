@@ -4,6 +4,7 @@ import moefccLogo from "../../assets/moefcc.png";
 import indiaFlag from "../../assets/india-flag.png";
 import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { INDIAN_LANGUAGES, translations } from "../../i18n";
 
@@ -68,11 +69,13 @@ function Header() {
 
       <header className="main-header">
         <div className="header-left">
-          <img src={emblem} alt="Government of India" className="emblem-logo" />
-          <div className="portal-title">
+          <Link to="/login" className="emblem-home-link" aria-label="Go to home page">
+            <img src={emblem} alt="Government of India" className="emblem-logo" />
+          </Link>
+          <Link to="/login" className="portal-title portal-title--link">
             <h1>CAMPA MIS Scheme Portal</h1>
             <p>Compensatory Afforestation Fund Management and Planning Authority</p>
-          </div>
+          </Link>
         </div>
 
         <div className="header-brand-right">
