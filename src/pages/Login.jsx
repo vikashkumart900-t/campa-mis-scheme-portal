@@ -15,7 +15,7 @@ const roleCodes = {
   implementingAgency: "IA",
   hod: "HOD",
   state_hod: "STATE_HOD",
-  districtForestOfficer: "DFO",
+  districtForestOfficer: "FC_DFO",
   programDivision: "PD",
   nationalCampa: "NATIONAL_CAMPA"
 };
@@ -87,6 +87,7 @@ function getRoleOptions(response) {
     HOD: "hod",
     STATE_HOD: "state_hod",
     DFO: "districtForestOfficer",
+    FC_DFO: "districtForestOfficer",
     PD: "programDivision",
     NATIONAL_CAMPA: "nationalCampa"
   };
