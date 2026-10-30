@@ -487,11 +487,18 @@ function Login() {
         }
       }
 
-      const jwt = result?.data?.jwt
+      const jwt = result?.data?.accessToken
+        || result?.data?.access_token
+        || result?.data?.jwt
         || result?.data?.token
+        || result?.accessToken
+        || result?.access_token
         || result?.jwt
         || result?.token;
-      const loginSucceeded = result?.message === "Login successful" || result?.success === true;
+      const loginSucceeded = (
+        typeof result?.message === "string"
+        && result.message.trim().toLowerCase().replace(/[.!]+$/, "") === "login successful"
+      ) || result?.success === true;
 
       if (!loginSucceeded && (typeof jwt !== "string" || !jwt.trim())) {
         throw new Error("The login API response did not include an access token.");
