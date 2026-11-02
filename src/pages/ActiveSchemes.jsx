@@ -45,17 +45,11 @@ function ActiveSchemes() {
   const proceedToLogin = () => {
     if (!selectedScheme || !schemeDetails || !hasRequiredSchemeDetails) return;
     const loginParams = new URLSearchParams({ scope: schemeScope });
-    if (schemeScope !== "state-central") {
+    if (schemeScope === "central") {
       loginParams.set("userType", "implementingAgency");
     }
     if (selectedScheme.schemeCode) loginParams.set("schemeCode", selectedScheme.schemeCode);
     if (selectedScheme.schemeId != null) loginParams.set("schemeId", String(selectedScheme.schemeId));
-    const selectedSchemeName = schemeDetails.schemeName || selectedScheme.schemeName;
-    if (selectedSchemeName) loginParams.set("schemeName", selectedSchemeName);
-    if (schemeDetails.organizationId != null) loginParams.set("organizationId", String(schemeDetails.organizationId));
-    if (schemeDetails.organizationName) loginParams.set("organizationName", schemeDetails.organizationName);
-    if (schemeDetails.divisionId != null) loginParams.set("programDivisionId", String(schemeDetails.divisionId));
-    if (schemeDetails.divisionName) loginParams.set("programDivisionName", schemeDetails.divisionName);
     navigate(`/signin?${loginParams.toString()}`);
   };
 

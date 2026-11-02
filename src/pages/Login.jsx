@@ -19,6 +19,11 @@ const roleCodes = {
   programDivision: "PD",
   nationalCampa: "NATIONAL_CAMPA"
 };
+const pariveshRoleCodes = {
+  districtForestOfficer: ["FC_DFO"],
+  nationalCampa: ["NATIONAL_CAMPA"]
+};
+const stateRoleTypes = ["districtForestOfficer", "nationalCampa"];
 const roleTileOrder = [
   "implementingAgency",
   "hod",
@@ -56,7 +61,7 @@ function getLoginErrorMessage(error) {
   }
 
   if (/user role not authorized/i.test(message)) {
-    return "This account is not authorized for the selected role. Confirm that it is assigned to NATIONAL_CAMPA.";
+    return "This account is not authorized for the selected role. Confirm that it is assigned to that role.";
   }
 
   if (/unauthori[sz]ed|invalid credentials|bad credentials|incorrect (username|password)|username or password/i.test(message)) {
@@ -86,7 +91,6 @@ function getRoleOptions(response) {
     IA: "implementingAgency",
     HOD: "hod",
     STATE_HOD: "state_hod",
-    DFO: "districtForestOfficer",
     FC_DFO: "districtForestOfficer",
     PD: "programDivision",
     NATIONAL_CAMPA: "nationalCampa"
@@ -111,7 +115,7 @@ function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryUserType = searchParams.get("userType");
-  const roleSelectionRequired = searchParams.get("scope") === "state-central" && !queryUserType;
+  const roleSelectionRequired = ["state", "state-central"].includes(searchParams.get("scope"))  && !queryUserType;
   const isStateSchemeLogin = ["state", "state-central"].includes(searchParams.get("scope"));
   const [selectedRole, setSelectedRole] = useState(
     () => userTypes.includes(queryUserType) ? queryUserType : roleSelectionRequired ? "" : "implementingAgency"
@@ -120,6 +124,7 @@ function Login() {
   const [rolesLoading, setRolesLoading] = useState(roleSelectionRequired);
   const [rolesError, setRolesError] = useState("");
   const [roleSelectionComplete, setRoleSelectionComplete] = useState(false);
+  const captchaRequired = searchParams.get("scope") !== "state-central" || !roleSelectionComplete;
   const [divisionOrganizations, setDivisionOrganizations] = useState([]);
   const [registrationMappingsLoading, setRegistrationMappingsLoading] = useState(false);
   const [registrationMappingsError, setRegistrationMappingsError] = useState("");
@@ -177,6 +182,7 @@ function Login() {
     nationalCampa: Leaf
   };
   const roleTileOptions = roleTileOrder
+    .filter((role) => searchParams.get("scope") !== "state" || stateRoleTypes.includes(role))
     .filter((role) => availableRoles.includes(role))
     .map((role) => ({ role, label: roleLabels[role], description: roleDescriptions[role] }));
   const SelectedRoleIcon = roleIcons[selectedRole];
@@ -424,7 +430,7 @@ function Login() {
       return;
     }
 
-    if (!(roleSelectionRequired && roleSelectionComplete) && captchaInput.trim().toUpperCase() !== captchaCode) {
+    if (captchaRequired && captchaInput.trim().toUpperCase() !== captchaCode) {
       setLoginError("CAPTCHA does not match. Please try again.");
       setCaptchaInput("");
       setCaptchaCode(createCaptcha());
@@ -468,15 +474,18 @@ function Login() {
         const roleAbbreviations = [
           result?.data?.roleAbbreviation,
           result?.roleAbbreviation,
+          result?.data?.roleCode,
+          result?.roleCode,
           ...(Array.isArray(result?.data?.roleNameAbbreviationDtos)
-            ? result.data.roleNameAbbreviationDtos.map((role) => role?.roleAbbreviation)
+            ? result.data.roleNameAbbreviationDtos.flatMap((role) => [role?.roleAbbreviation, role?.roleCode])
             : [])
         ]
           .filter((roleAbbreviation) => typeof roleAbbreviation === "string")
           .map((roleAbbreviation) => roleAbbreviation.trim().toUpperCase())
           .filter(Boolean);
         const expectedRoleCode = roleCodes[userType];
-        if (!expectedRoleCode || !roleAbbreviations.includes(expectedRoleCode)) {
+        const acceptedRoleCodes = pariveshRoleCodes[userType] || [expectedRoleCode];
+        if (!expectedRoleCode || !roleAbbreviations.some((roleCode) => acceptedRoleCodes.includes(roleCode))) {
           sessionStorage.removeItem("campaJwt");
           sessionStorage.removeItem("campaUserEmail");
           throw new Error(
@@ -510,7 +519,7 @@ function Login() {
       }
       if (userTypes.includes(userType)) {
         const dashboardParams = new URLSearchParams();
-        ["scope", "schemeId", "schemeCode", "schemeName", "organizationId", "organizationName", "programDivisionId", "programDivisionName"].forEach((key) => {
+        ["scope", "schemeId", "schemeCode"].forEach((key) => {
           const value = searchParams.get(key);
           if (value) {
             dashboardParams.set(key, value);
@@ -573,7 +582,7 @@ function Login() {
           </div>
         )}
         <div className="login-modal-content">
-          {!(roleSelectionRequired && roleSelectionComplete) && (
+          {captchaRequired && (
             <>
               <h1 id="login-modal-title">
                 {registrationOpen
@@ -892,7 +901,7 @@ function Login() {
                 </button>
               </div>
 
-              {!(roleSelectionRequired && roleSelectionComplete) && (
+              {captchaRequired && (
                 <>
                   <label className="login-captcha-label" htmlFor="login-captcha">
                     Enter CAPTCHA
