@@ -2,6 +2,11 @@ import { Fragment, useEffect, useState } from "react";
 import { getProjectStorageKey, readProjects } from "./projectStorage";
 import AasthaVanProjectDetails from "./AasthaVanProjectDetails";
 
+const fiscalYearOptions = Array.from({ length: 20 }, (_, index) => {
+  const startYear = 2026 + index;
+  return `${startYear}-${String(startYear + 1).slice(-2)}`;
+});
+
 const proposalSections = [
   {
     title: "Inventory Details",
@@ -10,18 +15,18 @@ const proposalSections = [
       {
         title: "Project details",
         fields: [
-          { name: "stateOrUnionTerritory", label: "State / Union Territory", required: true },
+          { name: "stateOrUnionTerritory", label: "State / Union Territory", required: true, readOnly: true },
           { name: "implementingAgency", label: "Implementing Agency", required: true },
           { name: "proposalTitle", label: "Title of proposal", required: true, wide: true },
-          { name: "projectPeriodFrom", label: "Project period — from FY", placeholder: "2026-27" },
-          { name: "projectPeriodTo", label: "Project period — to FY", placeholder: "2030-31" },
+          { name: "projectPeriodFrom", label: "Project period — from FY", type: "select", options: fiscalYearOptions },
+          { name: "projectPeriodTo", label: "Project period — to FY", type: "select", options: fiscalYearOptions },
           { name: "aasthaVanName", label: "Name and status of the Aastha Van", placeholder: "Enter the site name" },
-          { name: "aasthaVanStatus", label: "Site status", type: "select", options: ["Existing", "Proposed"] },
+          { name: "aasthaVanStatus", label: "Site status", type: "select", options: ["Existing", "Proposed", "New"] },
           { name: "interventionArea", label: "Proposed intervention area (ha)", type: "number", min: "0", step: "0.01" },
           { name: "totalProjectCost", label: "Total project cost (₹ lakh)", type: "number", min: "0", step: "0.01" },
           { name: "campaAssistance", label: "National CAMPA assistance sought (₹ lakh)", type: "number", min: "0", step: "0.01" },
           { name: "submissionDate", label: "Date of submission", type: "date" },
-          { name: "uniqueId", label: "Unique ID of the Aastha Van" },
+          { name: "uniqueId", label: "Unique ID of the Aastha Van", readOnly: true },
           { name: "projectId", label: "Project ID (generated on submit)", readOnly: true }
         ]
       },
@@ -36,7 +41,8 @@ const proposalSections = [
           { name: "beat", label: "Beat" },
           { name: "range", label: "Range" },
           { name: "division", label: "Forest division" },
-          { name: "coordinates", label: "Geo-spatial coordinates", placeholder: "Latitude, longitude" },
+          { name: "latitude", label: "Latitude", type: "number", step: "0.000001", placeholder: "e.g. 23.456789" },
+          { name: "longitude", label: "Longitude", type: "number", step: "0.000001", placeholder: "e.g. 85.123456" },
           { name: "kmlFiles", label: "KML / shape files", type: "file", accept: ".kml,.kmz,.shp,.zip", wide: true },
           { name: "khasraNumber", label: "Khasra number" },
           { name: "surveyNumber", label: "Survey number" },
