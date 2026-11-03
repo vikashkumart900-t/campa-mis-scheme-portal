@@ -133,13 +133,12 @@ function UserDashboard() {
   }
 
   if (isStateSchemeFormRole && selectedSchemeScope === "state") {
-    if (
+    const showProjectInventory = location.pathname.endsWith("/inventory") || (
       userType === "implementingAgency" &&
-      (
-        location.pathname.endsWith("/inventory") ||
-        location.pathname === `/dashboard/${userType}`
-      )
-    ) {
+      location.pathname === `/dashboard/${userType}`
+    );
+
+    if (showProjectInventory) {
       return (
         <>
           {schemeDetailsError && <p role="alert">Unable to load scheme details: {schemeDetailsError}</p>}
