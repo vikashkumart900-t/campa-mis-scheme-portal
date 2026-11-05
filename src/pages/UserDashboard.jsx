@@ -5,6 +5,8 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { apiUrls } from "../api/urls";
 import AasthaVanProposalForm from "../features/aastha-van/AasthaVanProposalForm";
 import AasthaVanProjectInventory from "../features/aastha-van/AasthaVanProjectInventory";
+import IADashboard from "./dashboards/IADashboard";
+import SchemeProposalWizard from "./dashboards/SchemeProposalWizard";
 
 const userTypes = ["implementingAgency", "hod", "state_hod", "districtForestOfficer", "programDivision", "nationalCampa"];
 const sessionTimeoutSeconds = 60 * 60;
@@ -132,6 +134,14 @@ function UserDashboard() {
     return <Navigate to={`/signin?${loginParams.toString()}`} replace />;
   }
 
+  if (userType === "implementingAgency" && location.pathname.endsWith("/new-proposal")) {
+    return (
+      <IADashboard pageTitle="Create New Proposal">
+        <SchemeProposalWizard />
+      </IADashboard>
+    );
+  }
+
   if (isStateSchemeFormRole && selectedSchemeScope === "state") {
     const showProjectInventory = location.pathname.endsWith("/inventory") || (
       userType === "implementingAgency" &&
@@ -176,6 +186,10 @@ function UserDashboard() {
         />
       </>
     );
+  }
+
+  if (userType === "implementingAgency") {
+    return <IADashboard />;
   }
 
   return <PlaceholderDashboard userType={userType} />;
