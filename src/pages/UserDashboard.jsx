@@ -14,7 +14,7 @@ const additionalRoleLabels = {
   hod: "Head of Division (HOD)",
   state_hod: "Chief Wildlife Warden (CWLW)",
   districtForestOfficer: "District Forest Officer (DFO)",
-  nationalCampa: "NATIONAL_CAMPA"
+  nationalCampa: "National Authority (CAMPA)"
 };
 
 function PlaceholderDashboard({ userType }) {

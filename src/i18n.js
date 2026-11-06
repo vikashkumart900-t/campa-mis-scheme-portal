@@ -123,7 +123,7 @@ export const translations = {
     programDivision: "Program Division",
     nationalAuthority: "National Authority , CAMPA",
     hod: "HOD",
-    username: "Enter UserId/EmailId",
+    username: "Enter Email ID",
     enterUsername: "Enter Username",
     password: "Enter Password",
     captchaLabel: "Security check (CAPTCHA)",

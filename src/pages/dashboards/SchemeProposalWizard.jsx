@@ -22,13 +22,6 @@ const steps = [
   "Review & Final Submission"
 ];
 
-const schemeCategories = [
-  "Forest Conservation",
-  "Wildlife Conservation",
-  "Eco-restoration",
-  "Other"
-];
-
 const inputSx = {
   "& .MuiInputBase-root": { bgcolor: "#fff", fontSize: 13 },
   "& .MuiInputLabel-root": { fontSize: 13 }
@@ -143,22 +136,6 @@ function SchemeProposalWizard() {
               <FormField label="1.1 Name of the Scheme" required>
                 <TextField name="schemeName" placeholder="Name of the Scheme" required fullWidth size="small" sx={inputSx} />
               </FormField>
-              <FormField label="1.2 Scheme Category" required>
-                <FormControl fullWidth required size="small" sx={inputSx}>
-                  <InputLabel id="scheme-category-label">Select Category</InputLabel>
-                  <Select labelId="scheme-category-label" name="schemeCategory" label="Select Category" defaultValue="">
-                    {schemeCategories.map((category) => <MenuItem key={category} value={category}>{category}</MenuItem>)}
-                  </Select>
-                </FormControl>
-              </FormField>
-              <FormField label="1.3 Scheme Type" required>
-                <FormControl fullWidth required size="small" sx={inputSx}>
-                  <Select name="schemeType" defaultValue="New">
-                    <MenuItem value="New">New</MenuItem>
-                    <MenuItem value="Continuation">Continuation</MenuItem>
-                  </Select>
-                </FormControl>
-              </FormField>
             </Box>
           </Paper>
 
@@ -208,16 +185,13 @@ function SchemeProposalWizard() {
               3. Scheme Details
             </Typography>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-              <FormField label="3.1 Name of the Scheme">
-                <TextField name="detailedSchemeName" placeholder="Enter detailed scheme name" fullWidth size="small" sx={inputSx} />
-              </FormField>
-              <FormField label="3.2 Date of Proposal">
+              <FormField label="3.1 Date of Proposal">
                 <TextField name="proposalDate" type="date" fullWidth size="small" sx={inputSx} />
               </FormField>
-              <FormField label="3.3 Expected Completion Date" required>
+              <FormField label="3.2 Expected Completion Date" required>
                 <TextField name="expectedCompletionDate" type="date" required fullWidth size="small" sx={inputSx} />
               </FormField>
-              <FormField label="3.4 Proposed Financial Outlay (Rs. in Lakhs)" required>
+              <FormField label="3.3 Proposed Financial Outlay (Rs. in Lakhs)" required>
                 <TextField
                   name="financialOutlay"
                   type="number"
@@ -229,7 +203,7 @@ function SchemeProposalWizard() {
                   sx={inputSx}
                 />
               </FormField>
-              <FormField label="3.5 Scheme Duration">
+              <FormField label="3.4 Scheme Duration">
                 <TextField name="schemeDuration" placeholder="Enter duration (e.g., 5 years)" fullWidth size="small" sx={inputSx} />
               </FormField>
             </Box>

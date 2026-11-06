@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, Landmark, Leaf, UsersRound, UserRoundCog } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
@@ -27,8 +27,8 @@ const stateRoleTypes = ["districtForestOfficer", "nationalCampa"];
 const roleTileOrder = [
   "implementingAgency",
   "hod",
-  "state_hod",
   "districtForestOfficer",
+  "state_hod",
   "programDivision",
   "nationalCampa"
 ];
@@ -163,7 +163,7 @@ function Login() {
     state_hod: "Chief Wildlife Warden (CWLW)",
     districtForestOfficer: "District Forest Officer (DFO)",
     programDivision: "Programme Division (PD)",
-    nationalCampa: "NATIONAL_CAMPA"
+    nationalCampa: "National Authority (CAMPA)"
   };
   const roleDescriptions = {
     implementingAgency: "For Implementing Agency users at central level.",
@@ -185,7 +185,7 @@ function Login() {
     .filter((role) => searchParams.get("scope") !== "state" || stateRoleTypes.includes(role))
     .filter((role) => availableRoles.includes(role))
     .map((role) => ({ role, label: roleLabels[role], description: roleDescriptions[role] }));
-  const SelectedRoleIcon = roleIcons[selectedRole];
+  //const SelectedRoleIcon = roleIcons[selectedRole];
   const registrationOrganizationOptions = Array.from(
     new Map(
       divisionOrganizations.map((item) => [
@@ -526,7 +526,13 @@ function Login() {
           }
         });
         const query = dashboardParams.toString();
-        navigate(`/dashboard/${userType}${query ? `?${query}` : ""}`);
+        //navigate(`/dashboard/${userType}${query ? `?${query}` : ""}`);
+        //start to show dummy page only for DFO user only//above commente line is correct code
+        const dashboardPath = userType === "districtForestOfficer" && searchParams.get("scope") === "state"
+          ? `/dashboard/${userType}/inventory`
+          : `/dashboard/${userType}`;
+        navigate(`${dashboardPath}${query ? `?${query}` : ""}`);
+        //end to show dummy page only for DFO user only
       }
     } catch (error) {
       setLoginError(getLoginErrorMessage(error));
@@ -559,17 +565,7 @@ function Login() {
 
         {roleSelectionRequired && roleSelectionComplete ? (
           <aside className="login-selected-role" aria-label="Selected role">
-            {SelectedRoleIcon && (
-              <span className="login-selected-role-icon" aria-hidden="true">
-                <SelectedRoleIcon />
-              </span>
-            )}
             <strong>{roleLabels[selectedRole]}</strong>
-            <span>{roleDescriptions[selectedRole]}</span>
-            <div className="login-selected-role-applicable">
-              <strong>Applicable for:</strong>
-              <span>{roleLabels[selectedRole]}</span>
-            </div>
           </aside>
         ) : (
           <div className="login-photo-grid" aria-hidden="true">
@@ -609,26 +605,29 @@ function Login() {
                 const RoleIcon = roleIcons[role];
                 const isSelected = selectedRole === role;
                 return (
-                  <label
-                    key={role}
-                    className={`login-role-card${isSelected ? " login-role-card--selected" : ""}`}
-                  >
-                    <input
-                      type="radio"
-                      name="selectedRole"
-                      value={role}
-                      checked={isSelected}
-                      onChange={() => {
-                        setSelectedRole(role);
-                        setLoginError("");
-                      }}
-                    />
-                    <span className="login-role-card-icon" aria-hidden="true"><RoleIcon /></span>
-                    <span className="login-role-card-copy">
-                      <strong>{label}</strong>
-                      <span>{description}</span>
-                    </span>
-                  </label>
+                  <Fragment key={role}>
+                    {role === "implementingAgency" && <h2 className="login-role-section-heading">Central Agencies</h2>}
+                    {role === "districtForestOfficer" && <h2 className="login-role-section-heading">States / UTs</h2>}
+                    <label
+                      className={`login-role-card${isSelected ? " login-role-card--selected" : ""}${["programDivision", "nationalCampa"].includes(role) ? " login-role-card--wide" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="selectedRole"
+                        value={role}
+                        checked={isSelected}
+                        onChange={() => {
+                          setSelectedRole(role);
+                          setLoginError("");
+                        }}
+                      />
+                      <span className="login-role-card-icon" aria-hidden="true"><RoleIcon /></span>
+                      <span className="login-role-card-copy">
+                        <strong>{label}</strong>
+                        <span>{description}</span>
+                      </span>
+                    </label>
+                  </Fragment>
                 );
               })}
               <button
