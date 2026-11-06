@@ -158,13 +158,7 @@ function Login() {
   });
   const t = (key) => translateText(key, language);
   const roleLabels = {
-     implementingAgency: (
-    <>
-      Implementing Agency (IA)
-      <br /><br />
-      Central Agency
-    </>
-  ),
+    implementingAgency: "Implementing Agency (IA) ",
     hod: "Head of Division (HOD)",
     state_hod: "Chief Wildlife Warden (CWLW)",
     districtForestOfficer: "District Forest Officer (DFO)",
