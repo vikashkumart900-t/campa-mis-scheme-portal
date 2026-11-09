@@ -123,7 +123,7 @@ function Login() {
   const [rolesLoading, setRolesLoading] = useState(roleSelectionRequired);
   const [rolesError, setRolesError] = useState("");
   const [roleSelectionComplete, setRoleSelectionComplete] = useState(false);
-  const captchaRequired = searchParams.get("scope") !== "state-central" || !roleSelectionComplete;
+  const captchaRequired = true;
   const [divisionOrganizations, setDivisionOrganizations] = useState([]);
   const [registrationMappingsLoading, setRegistrationMappingsLoading] = useState(false);
   const [registrationMappingsError, setRegistrationMappingsError] = useState("");

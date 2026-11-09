@@ -4245,7 +4245,7 @@
 }
 
 .login-modal--role-login .login-submit {
-  margin-top: 0;
+  margin-top: 10px;
 }
 
 .login-modal--role-selection .login-photo-grid {
