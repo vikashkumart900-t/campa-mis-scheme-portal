@@ -526,13 +526,7 @@ function Login() {
           }
         });
         const query = dashboardParams.toString();
-        //navigate(`/dashboard/${userType}${query ? `?${query}` : ""}`);
-        //start to show dummy page only for DFO user only//above commente line is correct code
-        const dashboardPath = userType === "districtForestOfficer" && searchParams.get("scope") === "state"
-          ? `/dashboard/${userType}/inventory`
-          : `/dashboard/${userType}`;
-        navigate(`${dashboardPath}${query ? `?${query}` : ""}`);
-        //end to show dummy page only for DFO user only
+        navigate(`/dashboard/${userType}${query ? `?${query}` : ""}`);
       }
     } catch (error) {
       setLoginError(getLoginErrorMessage(error));
