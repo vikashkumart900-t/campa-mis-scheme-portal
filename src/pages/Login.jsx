@@ -1,11 +1,10 @@
 import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, Landmark, Leaf, UsersRound, UserRoundCog } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translateText, translations } from "../i18n";
 import { apiUrls } from "../api/urls";
 import elephantImage from "../assets/elephant.jpg";
-import asthavanImage from "../assets/asthavan.jpg";
+import asthavanImage from "../assets/LeafBackground.png";
 import tigerImage from "../assets/tigers.jpg";
 import wildBuffaloImage from "../assets/wild_bufaalo.jpg";
 import rhinoImage from "../assets/rhino image.jpg";
@@ -173,19 +172,18 @@ function Login() {
     programDivision: "For Programme Division users.",
     nationalCampa: "For National CAMPA users (Authority)."
   };
-  const roleIcons = {
-    implementingAgency: Landmark,
-    hod: Landmark,
-    state_hod: UsersRound,
-    districtForestOfficer: UserRoundCog,
-    programDivision: FileText,
-    nationalCampa: Leaf
+  const roleDefination = {
+    implementingAgency: "Central Level",
+    hod: "Central Level",
+    state_hod: "State Level",
+    districtForestOfficer: "State Level",
+    programDivision: "Programme Division",
+    nationalCampa: "National CAMPA"
   };
   const roleTileOptions = roleTileOrder
     .filter((role) => searchParams.get("scope") !== "state" || stateRoleTypes.includes(role))
     .filter((role) => availableRoles.includes(role))
     .map((role) => ({ role, label: roleLabels[role], description: roleDescriptions[role] }));
-  //const SelectedRoleIcon = roleIcons[selectedRole];
   const registrationOrganizationOptions = Array.from(
     new Map(
       divisionOrganizations.map((item) => [
@@ -559,7 +557,9 @@ function Login() {
 
         {roleSelectionRequired && roleSelectionComplete ? (
           <aside className="login-selected-role" aria-label="Selected role">
+            <img className="login-selected-role-background" src={asthavanImage} alt="" aria-hidden="true" />
             <strong>{roleLabels[selectedRole]}</strong>
+            <span>{roleDefination[selectedRole]}</span>
           </aside>
         ) : (
           <div className="login-photo-grid" aria-hidden="true">
@@ -596,7 +596,6 @@ function Login() {
               {rolesLoading && <p className="login-role-status" role="status">Loading roles...</p>}
               {rolesError && <p className="captcha-error login-role-status" role="alert">{rolesError}</p>}
               {!rolesLoading && !rolesError && roleTileOptions.map(({ role, label, description }) => {
-                const RoleIcon = roleIcons[role];
                 const isSelected = selectedRole === role;
                 return (
                   <Fragment key={role}>
@@ -615,7 +614,6 @@ function Login() {
                           setLoginError("");
                         }}
                       />
-                      <span className="login-role-card-icon" aria-hidden="true"><RoleIcon /></span>
                       <span className="login-role-card-copy">
                         <strong>{label}</strong>
                         <span>{description}</span>
@@ -624,14 +622,20 @@ function Login() {
                   </Fragment>
                 );
               })}
-              <button
-                className="login-role-continue"
-                type="button"
-                disabled={!selectedRole || rolesLoading || Boolean(rolesError)}
-                onClick={() => setRoleSelectionComplete(true)}
-              >
-                Continue <span aria-hidden="true">→</span>
-              </button>
+              <div className="login-role-footer">
+                <div className="login-role-trust">
+                  <span>Secure &amp; Trusted</span>
+                  <span>Government of India</span>
+                </div>
+                <button
+                  className="login-role-continue"
+                  type="button"
+                  disabled={!selectedRole || rolesLoading || Boolean(rolesError)}
+                  onClick={() => setRoleSelectionComplete(true)}
+                >
+                  Continue <span aria-hidden="true">→</span>
+                </button>
+              </div>
             </div>
           ) : registrationOpen ? (
                   <form onSubmit={handleRegistrationSubmit}>
