@@ -624,8 +624,7 @@ function Login() {
               })}
               <div className="login-role-footer">
                 <div className="login-role-trust">
-                  <span>Secure &amp; Trusted</span>
-                  <span>Government of India</span>
+                  <span></span>
                 </div>
                 <button
                   className="login-role-continue"
