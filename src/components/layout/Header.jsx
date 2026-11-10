@@ -2,6 +2,7 @@ import emblem from "../../assets/emblem.png";
 import ministryLogo from "../../assets/ministry-logo.png";
 import moefccLogo from "../../assets/moefcc.png";
 import indiaFlag from "../../assets/india-flag.png";
+import missionLifeLogo from "../../assets/mission_life.png";
 import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -80,16 +81,15 @@ function Header() {
 
         <div className="header-brand-right">
           <div className="header-brand-right__life">
-            <strong>LiFE</strong>
-            <small>Life for Environment</small>
+            <img
+              src={missionLifeLogo}
+              alt="Mission LiFE: Lifestyle for Environment"
+              className="header-brand-right__life-logo"
+            />
           </div>
 
           <div className="header-brand-right__logo-wrap">
             <img src={moefccLogo} alt="CAMPA" className="header-brand-right__campa-logo" />
-            <div className="header-brand-right__text">
-              <strong>CAMPA</strong>
-              <small>Greener Tomorrow</small>
-            </div>
           </div>
 
           <img

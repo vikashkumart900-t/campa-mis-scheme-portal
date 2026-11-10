@@ -4,7 +4,8 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translateText, translations } from "../i18n";
 import { apiUrls } from "../api/urls";
 import elephantImage from "../assets/elephant.jpg";
-import asthavanImage from "../assets/LeafBackground.png";
+//import loginBgImage from "../assets/LeafBackground.png";
+import asthavanImage from "../assets/asthavan.jpg";
 import tigerImage from "../assets/tigers.jpg";
 import wildBuffaloImage from "../assets/wild_bufaalo.jpg";
 import rhinoImage from "../assets/rhino image.jpg";
@@ -557,7 +558,7 @@ function Login() {
 
         {roleSelectionRequired && roleSelectionComplete ? (
           <aside className="login-selected-role" aria-label="Selected role">
-            <img className="login-selected-role-background" src={asthavanImage} alt="" aria-hidden="true" />
+            {/* <img className="login-selected-role-background" src={loginBgImage} alt="" aria-hidden="true" /> */}
             <strong>{roleLabels[selectedRole]}</strong>
             <span>{roleDefination[selectedRole]}</span>
           </aside>

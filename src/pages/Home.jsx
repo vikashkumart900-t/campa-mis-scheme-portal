@@ -106,13 +106,13 @@ function Home() {
             />
           </div>
 
-          <div className="landing-hero__pill">
+          {/* <div className="landing-hero__pill">
             <Sprout size={22} aria-hidden="true" />
             <div className="landing-hero__pill-text">
               <span>{copy.forestsToday}</span>
               <strong>{copy.greenerTomorrow}</strong>
             </div>
-          </div>
+          </div> */}
 
         </section>
 
