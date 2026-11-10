@@ -19,6 +19,7 @@ import FAQ from "./pages/FAQ";
 import ReportsAnalytics from "./pages/ReportsAnalytics";
 import UserManual from "./pages/UserManual";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
 import UserDashboard from "./pages/UserDashboard";
 
 const ChartPanel = lazy(() => import("./components/ui/ChartPanel"));
@@ -287,6 +288,7 @@ function App() {
       <Route path="/dashboard/:userType/new-proposal" element={<UserDashboard />} />
       <Route path="/dashboard/:userType" element={<UserDashboard />} />
       <Route path="/signin" element={<><Home /><Login /></>} />
+      <Route path="/forgot-password" element={<><Home /><ForgotPassword /></>} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

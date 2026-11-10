@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translateText, translations } from "../i18n";
 import { apiUrls } from "../api/urls";
@@ -115,7 +115,7 @@ function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryUserType = searchParams.get("userType");
-  const roleSelectionRequired = ["state", "state-central"].includes(searchParams.get("scope"))  && !queryUserType;
+  const roleSelectionRequired = ["state", "state-central"].includes(searchParams.get("scope"));
   const isStateSchemeLogin = ["state", "state-central"].includes(searchParams.get("scope"));
   const [selectedRole, setSelectedRole] = useState(
     () => userTypes.includes(queryUserType) ? queryUserType : roleSelectionRequired ? "" : "implementingAgency"
@@ -123,7 +123,14 @@ function Login() {
   const [availableRoles, setAvailableRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(roleSelectionRequired);
   const [rolesError, setRolesError] = useState("");
-  const [roleSelectionComplete, setRoleSelectionComplete] = useState(false);
+  const [roleSelectionComplete, setRoleSelectionComplete] = useState(
+    () => roleSelectionRequired && userTypes.includes(queryUserType)
+  );
+  const forgotPasswordParams = new URLSearchParams(searchParams);
+  if (roleSelectionComplete && selectedRole) {
+    forgotPasswordParams.set("userType", selectedRole);
+  }
+  const forgotPasswordPath = `/forgot-password${forgotPasswordParams.toString() ? `?${forgotPasswordParams.toString()}` : ""}`;
   const captchaRequired = true;
   const [divisionOrganizations, setDivisionOrganizations] = useState([]);
   const [registrationMappingsLoading, setRegistrationMappingsLoading] = useState(false);
@@ -577,18 +584,18 @@ function Login() {
             <>
               <h1 id="login-modal-title">
                 {registrationOpen
-                  ? "Nodal Officer Registration"
+                  ? <h5>Nodal Officer Registration</h5>
                   : roleSelectionRequired
                     ? "Login to MIS Portal"
                     : translations[language].login}
               </h1>
-              <p className="login-modal-subtitle">
+              {/* <p className="login-modal-subtitle">
                 {registrationOpen
                   ? "Enter your organization and nodal officer details."
                   : roleSelectionRequired
                     ? "Select your role to continue."
                     : t("loginToAccount")}
-              </p>
+              </p> */}
             </>
           )}
 
@@ -972,7 +979,8 @@ function Login() {
                     }}
                   >
                     {t("registerNow")}
-                  </button>
+                  </button><br/><br/>
+                  <Link to={forgotPasswordPath}>Forgot Password?</Link>
                 </p>
               )}
           </form>

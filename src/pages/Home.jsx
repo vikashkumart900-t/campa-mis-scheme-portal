@@ -37,9 +37,9 @@ function Home() {
 
   const stats = [
     { value: "36", label: t.states, sublabel: copy.stateSublabel, icon: <img className="landing-stat-card__map-icon" src={indiaMapImage} alt="" /> },
-    { value: "25+", label: t.implementingAgencies, sublabel: copy.agenciesSublabel, icon: <Landmark size={28} /> },
-    { value: "48+", label: copy.activeSchemesLabel, sublabel: copy.schemesSublabel, icon: <FileText size={28} /> },
-    { value: "100%", label: copy.transparencyLabel, sublabel: copy.insightsSublabel, icon: <BarChart3 size={28} /> }
+    { value: "25+", label: t.implementingAgencies, sublabel: copy.agenciesSublabel },
+    { value: "48+", label: copy.activeSchemesLabel, sublabel: copy.schemesSublabel },
+    { value: "100%", label: copy.transparencyLabel, sublabel: copy.insightsSublabel }
   ];
 
   const programmes = [
