@@ -4139,15 +4139,18 @@
 }
 
 .login-selected-role > strong {
-  color: #071d73;
+  /* color: #071d73; */
+  color: #000000;
   font-size: 18px;
   line-height: 1.25;
 }
 
 .login-selected-role > span {
-  color: #536159;
+  /* color: #536159; */
+  color: #383b39;
   font-size: 14px;
   line-height: 1.4;
+  font-weight: 500;
 }
 
 .login-selected-role-applicable {
@@ -4281,7 +4284,7 @@
 }
 
 .login-modal--role-selection .login-modal-subtitle {
-  margin: 0;
+  margin: 4px;
   color: #071d73;
   font-size: 13px;
   font-weight: 600;
@@ -4603,7 +4606,8 @@
 .login-submit {
   width: 100%;
   min-height: 50px;
-  margin-top: 12px;
+  /* margin-top: 12px; */
+  margin-top: 1px;
   padding: 0 20px;
   color: #fff;
   background: linear-gradient(135deg, #0f6a4a, #13845b);
@@ -4641,9 +4645,16 @@
   font-size: 14px;
 }
 
+.forgot-password-username-screen {
+  margin: 13px 0 0;
+  color: #1769aa;
+  font-size: 14px;
+}
+
 .login-register-prompt button {
   padding: 0;
-  color: #f0442c;
+  /* color: #f0442c; */
+  color: #1D4ED8;
   background: transparent;
   border: 0;
   cursor: pointer;

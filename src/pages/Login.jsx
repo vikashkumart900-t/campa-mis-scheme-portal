@@ -973,7 +973,9 @@ function Login() {
                   >
                     {t("registerNow")}
                   </button><br/><br/>
-                  <Link to={forgotPasswordPath}>Forgot Password?</Link>
+                  <Link style={{ color: '#1769aa' }} to={forgotPasswordPath}>
+                    Forgot Password?
+                  </Link>
                 </p>
               )}
           </form>

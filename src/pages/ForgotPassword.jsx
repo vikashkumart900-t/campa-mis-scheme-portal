@@ -12,6 +12,8 @@ function ForgotPassword() {
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState("email");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -219,43 +221,63 @@ function ForgotPassword() {
           {step === "password" && (
             <form onSubmit={handleResetPassword}>
               <label className="visually-hidden" htmlFor="forgot-password-new">New password</label>
-              <input
-                className="login-modal-input"
-                id="forgot-password-new"
-                type="password"
-                name="newPassword"
-                placeholder="New password"
-                autoComplete="new-password"
-                autoFocus
-                required
-                value={newPassword}
-                onChange={(event) => {
-                  setNewPassword(event.target.value);
-                  setError("");
-                }}
-              />
+              <div className="login-password-field">
+                <input
+                  className="login-modal-input"
+                  id="forgot-password-new"
+                  type={showNewPassword ? "text" : "password"}
+                  name="newPassword"
+                  placeholder="New password"
+                  autoComplete="new-password"
+                  autoFocus
+                  required
+                  value={newPassword}
+                  onChange={(event) => {
+                    setNewPassword(event.target.value);
+                    setError("");
+                  }}
+                />
+                <button
+                  className="login-password-toggle"
+                  type="button"
+                  onClick={() => setShowNewPassword((shown) => !shown)}
+                  aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                >
+                  {showNewPassword ? "Hide" : "Show"}
+                </button>
+              </div>
               <label className="visually-hidden" htmlFor="forgot-password-confirm">Confirm password</label>
-              <input
-                className="login-modal-input"
-                id="forgot-password-confirm"
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm password"
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(event) => {
-                  setConfirmPassword(event.target.value);
-                  setError("");
-                }}
-              />
+              <div className="login-password-field">
+                <input
+                  className="login-modal-input"
+                  id="forgot-password-confirm"
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(event) => {
+                    setConfirmPassword(event.target.value);
+                    setError("");
+                  }}
+                />
+                <button
+                  className="login-password-toggle"
+                  type="button"
+                  onClick={() => setShowConfirmPassword((shown) => !shown)}
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirmPassword ? "Hide" : "Show"}
+                </button>
+              </div>
               {error && <p className="captcha-error" role="alert">{error}</p>}
               <button className="login-submit" type="submit" disabled={submitting}>
                 {submitting ? "Saving..." : "Reset Password"}
               </button>
             </form>
           )}
-          <p className="login-register-prompt">
+          <p className="forgot-password-username-screen">
             <Link to={loginPath}>
               {step === "complete" ? "Click here to login" : "Back to login"}
             </Link>
