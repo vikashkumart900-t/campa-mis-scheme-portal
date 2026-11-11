@@ -4,7 +4,7 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { translateText, translations } from "../i18n";
 import { apiUrls } from "../api/urls";
 import elephantImage from "../assets/elephant.jpg";
-//import loginBgImage from "../assets/LeafBackground.png";
+import loginBgImage from "../assets/wild_bufaalo.jpg";
 import asthavanImage from "../assets/asthavan.jpg";
 import tigerImage from "../assets/tigers.jpg";
 import wildBuffaloImage from "../assets/wild_bufaalo.jpg";
@@ -565,7 +565,7 @@ function Login() {
 
         {roleSelectionRequired && roleSelectionComplete ? (
           <aside className="login-selected-role" aria-label="Selected role">
-            {/* <img className="login-selected-role-background" src={loginBgImage} alt="" aria-hidden="true" /> */}
+            <img className="login-selected-role-background" src={loginBgImage} alt="" aria-hidden="true" />
             <strong>{roleLabels[selectedRole]}</strong>
             <span>{roleDefination[selectedRole]}</span>
           </aside>
@@ -589,13 +589,6 @@ function Login() {
                     ? "Login to MIS Portal"
                     : translations[language].login}
               </h1>
-              {/* <p className="login-modal-subtitle">
-                {registrationOpen
-                  ? "Enter your organization and nodal officer details."
-                  : roleSelectionRequired
-                    ? "Select your role to continue."
-                    : t("loginToAccount")}
-              </p> */}
             </>
           )}
 
@@ -607,8 +600,8 @@ function Login() {
                 const isSelected = selectedRole === role;
                 return (
                   <Fragment key={role}>
-                    {role === "implementingAgency" && <h2 className="login-role-section-heading">Central Agencies</h2>}
-                    {role === "districtForestOfficer" && <h2 className="login-role-section-heading">States / UTs</h2>}
+                    {role === "implementingAgency" && <h2 className="login-role-section-heading-central">Central Agencies</h2>}
+                    {role === "districtForestOfficer" && <h2 className="login-role-section-heading-states">States / UTs</h2>}
                     <label
                       className={`login-role-card${isSelected ? " login-role-card--selected" : ""}${["programDivision", "nationalCampa"].includes(role) ? " login-role-card--wide" : ""}`}
                     >

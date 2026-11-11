@@ -2138,6 +2138,14 @@
 .landing-stat-card:nth-child(2) .landing-stat-card__icon {
   color: #1765c0;
   background: #d8e8ff;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.landing-stat-card:nth-child(2) .landing-stat-card__value {
+  display: none;
 }
 
 .landing-stat-card:nth-child(3) .landing-stat-card__icon {
@@ -4292,12 +4300,24 @@
   margin: 0;
 }
 
-.login-role-section-heading {
+.login-role-section-heading-central {
   grid-column: 1 / -1;
   margin: 3px 0 0;
   padding: 5px 7px;
-  color: #075b43;
-  background: #edf6f0;
+  color: #ffffff;
+  background: #0c7c33;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.login-role-section-heading-states {
+  grid-column: 1 / -1;
+  margin: 3px 0 0;
+  padding: 5px 7px;
+  color: #ffffff;
+  background: rgb(221, 115, 44);
   border-radius: 5px;
   font-size: 13px;
   line-height: 1.25;
@@ -4325,12 +4345,12 @@
   grid-column: 1 / -1;
   min-height: 50px;
 }
-
-.login-role-card:nth-of-type(2) { background: #ffffff; border-color: #e5dcf8; }
-.login-role-card:nth-of-type(3) { background: #ffffff; border-color: #e5dcf8; }
-.login-role-card:nth-of-type(4) { background: #ffffff; border-color: #e5dcf8; }
-.login-role-card:nth-of-type(5) { background: #ffffff; border-color: #d8e8f8; }
-.login-role-card:nth-of-type(6) { background: #ffffff; border-color: #e5dcf8; }
+.login-role-card:nth-of-type(1) { background: #d9eddf; border-color: #0c7c33; }
+.login-role-card:nth-of-type(2) { background: #d9eddf; border-color: #0c7c33; }
+.login-role-card:nth-of-type(3) { background: #f8e1d2; border-color: #dd732c; }
+.login-role-card:nth-of-type(4) { background: #f8e1d2; border-color: #dd732c; }
+.login-role-card:nth-of-type(5) { background: #fff3cd; border-color: #e0ad22; }
+.login-role-card:nth-of-type(6) { background: #dceaf7; border-color: #3976a8; }
 
 .login-role-card:hover,
 .login-role-card--selected {

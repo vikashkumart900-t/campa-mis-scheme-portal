@@ -11,7 +11,7 @@ import tigerImage from "../assets/tigers.jpg";
 import rhinoImage from "../assets/rhino image.jpg";
 import wildBuffaloImage from "../assets/wild_bufaalo.jpg";
 import indiaMapImage from "../assets/india-states.svg";
-import { ArrowRight, BarChart3, Bell, BookOpenText, FileText, Landmark, Leaf, Sprout, Target } from "lucide-react";
+import { ArrowRight, BarChart3, Bell, BookOpenText, FileText, Leaf, Sprout, Target } from "lucide-react";
 
 const heroSlides = [
   { image: tigerImage, altKey: "tigerAlt" },
@@ -37,7 +37,7 @@ function Home() {
 
   const stats = [
     { value: "36", label: t.states, sublabel: copy.stateSublabel, icon: <img className="landing-stat-card__map-icon" src={indiaMapImage} alt="" /> },
-    { value: "25+", label: t.implementingAgencies, sublabel: copy.agenciesSublabel },
+    { value: "25+", label: t.implementingAgencies, sublabel: copy.agenciesSublabel, icon: null },
     { value: "48+", label: copy.activeSchemesLabel, sublabel: copy.schemesSublabel },
     { value: "100%", label: copy.transparencyLabel, sublabel: copy.insightsSublabel }
   ];
@@ -119,8 +119,8 @@ function Home() {
         <section className="landing-stats" aria-label={copy.portalStatistics}>
           {stats.map(({ value, label, sublabel, icon }) => (
             <div key={label} className="landing-stat-card">
-              <div className="landing-stat-card__icon">{icon}</div>
-              <div className="landing-stat-card__value">{value}</div>
+              <div className="landing-stat-card__icon">{icon ?? value}</div>
+              <div className="landing-stat-card__value">{icon ? value : ""}</div>
               <div className="landing-stat-card__label">{label}</div>
               <div className="landing-stat-card__sublabel">{sublabel}</div>
             </div>
