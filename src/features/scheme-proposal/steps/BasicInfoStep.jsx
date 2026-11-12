@@ -6,6 +6,12 @@ const inputSx = {
   "& .MuiInputLabel-root": { fontSize: 13 }
 };
 
+const readOnlyInputSx = {
+  ...inputSx,
+  "& .MuiInputBase-root": { ...inputSx["& .MuiInputBase-root"], bgcolor: "#f1f3f5" },
+  "& .MuiInputBase-input": { color: "#667085", cursor: "not-allowed" }
+};
+
 function FormField({ id, label, required = false, children }) {
   return (
     <Box>
@@ -52,7 +58,8 @@ function BasicInfoStep() {
               placeholder="Name of the Scheme"
               fullWidth
               size="small"
-              sx={inputSx}
+              sx={readOnlyInputSx}
+              slotProps={{ htmlInput: { readOnly: true } }}
               {...getFieldProps("schemeName", { required: "Scheme name is required." })}
             />
           </FormField>
@@ -68,7 +75,14 @@ function BasicInfoStep() {
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
           <FormField id="organizationName" label="2.1 Name of Implementing Agency">
-            <TextField id="organizationName" fullWidth size="small" sx={inputSx} {...getFieldProps("organizationName")} />
+            <TextField 
+              id="organizationName" 
+              fullWidth 
+              size="small" 
+              sx={readOnlyInputSx}
+              slotProps={{ htmlInput: { readOnly: true } }}
+              {...getFieldProps("organizationName")} 
+            />
           </FormField>
           <FormField id="officerName" label="2.2 Name of the Nodal Officer of Implementing Agency">
             <TextField id="officerName" fullWidth size="small" sx={inputSx} {...getFieldProps("officerName")} />
@@ -89,14 +103,24 @@ function BasicInfoStep() {
             />
           </FormField>
           <FormField id="mobile" label="2.5 Phone No">
-            <TextField id="mobile" type="tel" fullWidth size="small" sx={inputSx} {...getFieldProps("mobile")} />
+            <TextField
+              id="mobile"
+              type="tel"
+              slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 10 } }}
+              fullWidth
+              size="small"
+              sx={inputSx}
+              {...getFieldProps("mobile", {
+                pattern: { value: /^[0-9]{10}$/, message: "Enter a 10-digit phone number." }
+              })}
+            />
           </FormField>
           <FormField id="aadhaarNumber" label="2.6 Aadhaar No." required>
             <TextField
               id="aadhaarNumber"
               type="password"
               placeholder="Enter 12-digit Aadhaar number"
-              inputProps={{ inputMode: "numeric", maxLength: 12, autoComplete: "off" }}
+              slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 12, autoComplete: "new-password" } }}
               fullWidth
               size="small"
               sx={inputSx}

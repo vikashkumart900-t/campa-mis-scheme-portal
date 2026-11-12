@@ -281,7 +281,7 @@ function SchemeProposalWizard() {
               disabled={savingBasicInfo || schemeNameLoading || Boolean(schemeNameError)}
               sx={{ bgcolor: "#009b43", fontSize: 12, fontWeight: 700, textTransform: "none", "&:hover": { bgcolor: "#087f3d" } }}
             >
-              {savingBasicInfo ? "Saving..." : "Save &amp; Next"}
+              {savingBasicInfo ? "Saving..." : "Save & Next"}
             </Button>
           </Box>
       </Box>
@@ -311,7 +311,7 @@ function SchemeProposalWizard() {
                   Next
                 </Button>
                 <Button type="submit" variant="contained" sx={{ textTransform: "none" }}>
-                  Save &amp; Next
+                  Save & Next
                 </Button>
               </Box>
             ) : (
