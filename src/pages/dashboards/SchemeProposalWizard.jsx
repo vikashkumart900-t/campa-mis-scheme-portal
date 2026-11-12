@@ -1,66 +1,74 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import {
   Box,
   Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  TextField,
   Typography
 } from "@mui/material";
+import BasicInfoStep from "../../features/scheme-proposal/steps/BasicInfoStep";
+import ObjectivesFundingStep from "../../features/scheme-proposal/steps/ObjectivesFundingStep";
+import DeliverablesStep from "../../features/scheme-proposal/steps/DeliverablesStep";
+import EvaluationResearchStep from "../../features/scheme-proposal/steps/EvaluationResearchStep";
+import DocumentsEmploymentStep from "../../features/scheme-proposal/steps/DocumentsEmploymentStep";
+import TechExitDeclarationStep from "../../features/scheme-proposal/steps/TechExitDeclarationStep";
+import InstallmentStep from "../../features/scheme-proposal/steps/InstallmentStep";
+import ReviewSubmissionStep from "../../features/scheme-proposal/steps/ReviewSubmissionStep";
+import { proposalSteps } from "../../features/scheme-proposal/config/proposalSteps";
 
-const steps = [
-  "Basic Info",
-  "Objectives & Funding",
-  "Deliverables",
-  "Evaluation & Research",
-  "Documents & Employment",
-  "Tech, Exit & Declaration",
-  "Installment",
-  "Review & Final Submission"
+const laterStepComponents = [
+  ObjectivesFundingStep,
+  DeliverablesStep,
+  EvaluationResearchStep,
+  DocumentsEmploymentStep,
+  TechExitDeclarationStep,
+  InstallmentStep,
+  ReviewSubmissionStep
 ];
-
-const inputSx = {
-  "& .MuiInputBase-root": { bgcolor: "#fff", fontSize: 13 },
-  "& .MuiInputLabel-root": { fontSize: 13 }
-};
-
-function FormField({ label, required = false, children }) {
-  return (
-    <Box>
-      <Typography
-        component="label"
-        sx={{ display: "block", mb: 0.75, color: "#344457", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}
-      >
-        {label} {required && <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>}
-      </Typography>
-      {children}
-    </Box>
-  );
-}
 
 function SchemeProposalWizard() {
   const [activeStep, setActiveStep] = useState(0);
-  const [basicInfoSaved, setBasicInfoSaved] = useState(false);
-  const formRef = useRef(null);
+  const [savedStepIndex, setSavedStepIndex] = useState(null);
+  const formMethods = useForm({
+    mode: "onBlur",
+    shouldUnregister: false,
+    defaultValues: {
+      ...Object.fromEntries(proposalSteps.slice(1).map(({ id }) => [id, { username: "" }])),
+      schemeName: "",
+      implementingAgency: "",
+      nodalOfficerName: "",
+      designation: "",
+      email: "",
+      phone: "",
+      aadhaarNumber: "",
+      proposalDate: "",
+      expectedCompletionDate: "",
+      financialOutlay: "",
+      schemeDuration: ""
+    }
+  });
+  const { trigger } = formMethods;
+  const ActiveStepForm = activeStep > 0 ? laterStepComponents[activeStep - 1] : null;
 
-  const goToNextStep = (event) => {
-    event.preventDefault();
-    if (!formRef.current?.reportValidity()) return;
-    setActiveStep((currentStep) => Math.min(currentStep + 1, steps.length - 1));
+  const validateCurrentStep = async () => {
+    const fields = proposalSteps[activeStep].fields;
+    return fields.length === 0 || trigger(fields);
   };
 
-  const saveAndGoToNextStep = (event) => {
+  const goToNextStep = async () => {
+    if (!(await validateCurrentStep())) return;
+    setActiveStep((currentStep) => Math.min(currentStep + 1, proposalSteps.length - 1));
+  };
+
+  const saveAndGoToNextStep = async (event) => {
     event.preventDefault();
-    if (!formRef.current?.reportValidity()) return;
-    setBasicInfoSaved(true);
-    setActiveStep((currentStep) => Math.min(currentStep + 1, steps.length - 1));
+    if (!(await validateCurrentStep())) return;
+    setSavedStepIndex(activeStep);
+    setActiveStep((currentStep) => Math.min(currentStep + 1, proposalSteps.length - 1));
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f6f7f9", p: { xs: 1, md: 1.5 } }}>
+    <FormProvider {...formMethods}>
+      <Box sx={{ minHeight: "100vh", bgcolor: "#f6f7f9", p: { xs: 1, md: 1.5 } }}>
       <Box
         aria-label="Proposal form steps"
         sx={{
@@ -75,16 +83,24 @@ function SchemeProposalWizard() {
           bgcolor: "#fff"
         }}
       >
-        {steps.map((step, index) => {
+        {proposalSteps.map((step, index) => {
           const isActive = index === activeStep;
-          const isReview = index === steps.length - 1;
+          const isReview = index === proposalSteps.length - 1;
           return (
-            <Box
-              key={step}
+            <Button
+              key={step.label}
+              type="button"
               aria-current={isActive ? "step" : undefined}
+              aria-label={`Go to step ${index + 1}: ${step.label}`}
+              onClick={() => {
+                setSavedStepIndex(null);
+                setActiveStep(index);
+              }}
               sx={{
                 display: "flex",
+                width: "100%",
                 minHeight: 50,
+                minWidth: 0,
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
@@ -94,7 +110,11 @@ function SchemeProposalWizard() {
                 borderRadius: 1,
                 bgcolor: isActive ? "#e1f3fc" : isReview ? "#e0f9e8" : "#fffbed",
                 color: isActive ? "#005e91" : isReview ? "#087638" : "#a95800",
-                textAlign: "center"
+                textAlign: "center",
+                textTransform: "none",
+                "&:hover": {
+                  bgcolor: isActive ? "#e1f3fc" : isReview ? "#d2f3dd" : "#fff5d9"
+                }
               }}
             >
               <Box
@@ -112,103 +132,20 @@ function SchemeProposalWizard() {
               >
                 {index + 1}
               </Box>
-              <Typography sx={{ fontSize: 9, lineHeight: 1.15, whiteSpace: "nowrap" }}>{step}</Typography>
-            </Box>
+              <Typography sx={{ fontSize: 9, lineHeight: 1.15, whiteSpace: "nowrap" }}>{step.label}</Typography>
+            </Button>
           );
         })}
       </Box>
 
       <Box
-        ref={formRef}
         component="form"
-        onChange={() => setBasicInfoSaved(false)}
+        noValidate
+        onChange={() => setSavedStepIndex(null)}
         onSubmit={saveAndGoToNextStep}
         sx={{ display: activeStep === 0 ? "block" : "none" }}
       >
-          <Paper
-            elevation={0}
-            sx={{ mb: 1.5, p: { xs: 2, md: 2.5 }, border: "1px solid #e0e4ea", borderRadius: 2, bgcolor: "#f9fafb" }}
-          >
-            <Typography component="h1" sx={{ mb: 2, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
-              1. Basic Scheme Information
-            </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-              <FormField label="1.1 Name of the Scheme" required>
-                <TextField name="schemeName" placeholder="Name of the Scheme" required fullWidth size="small" sx={inputSx} />
-              </FormField>
-            </Box>
-          </Paper>
-
-          <Paper
-            elevation={0}
-            sx={{ mb: 1.5, p: { xs: 2, md: 2.5 }, border: "1px solid #e0e4ea", borderRadius: 2, bgcolor: "#f9fafb" }}
-          >
-            <Typography component="h2" sx={{ mb: 2, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
-              2. Nodal Officer Details
-            </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-              <FormField label="2.1 Name of Implementing Agency">
-                <TextField name="implementingAgency" fullWidth size="small" sx={inputSx} />
-              </FormField>
-              <FormField label="2.2 Name of the Nodal Officer of Implementing Agency">
-                <TextField name="nodalOfficerName" fullWidth size="small" sx={inputSx} />
-              </FormField>
-              <FormField label="2.3 Designation">
-                <TextField name="designation" fullWidth size="small" sx={inputSx} />
-              </FormField>
-              <FormField label="2.4 Email ID">
-                <TextField name="email" type="email" fullWidth size="small" sx={inputSx} />
-              </FormField>
-              <FormField label="2.5 Phone No">
-                <TextField name="phone" type="tel" fullWidth size="small" sx={inputSx} />
-              </FormField>
-              <FormField label="2.6 Aadhaar No." required>
-                <TextField
-                  name="aadhaarNumber"
-                  type="password"
-                  placeholder="Enter 12-digit Aadhaar number"
-                  required
-                  inputProps={{ inputMode: "numeric", maxLength: 12, pattern: "[0-9]{12}", autoComplete: "off" }}
-                  fullWidth
-                  size="small"
-                  sx={inputSx}
-                />
-              </FormField>
-            </Box>
-          </Paper>
-
-          <Paper
-            elevation={0}
-            sx={{ mb: 1.5, p: { xs: 2, md: 2.5 }, border: "1px solid #e0e4ea", borderRadius: 2, bgcolor: "#f9fafb" }}
-          >
-            <Typography component="h2" sx={{ mb: 2, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
-              3. Scheme Details
-            </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-              <FormField label="3.1 Date of Proposal">
-                <TextField name="proposalDate" type="date" fullWidth size="small" sx={inputSx} />
-              </FormField>
-              <FormField label="3.2 Expected Completion Date" required>
-                <TextField name="expectedCompletionDate" type="date" required fullWidth size="small" sx={inputSx} />
-              </FormField>
-              <FormField label="3.3 Proposed Financial Outlay (Rs. in Lakhs)" required>
-                <TextField
-                  name="financialOutlay"
-                  type="number"
-                  required
-                  inputProps={{ min: 0, step: "any" }}
-                  placeholder="Enter amount in lakhs"
-                  fullWidth
-                  size="small"
-                  sx={inputSx}
-                />
-              </FormField>
-              <FormField label="3.4 Scheme Duration">
-                <TextField name="schemeDuration" placeholder="Enter duration (e.g., 5 years)" fullWidth size="small" sx={inputSx} />
-              </FormField>
-            </Box>
-          </Paper>
-
+          <BasicInfoStep />
           <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, borderTop: "1px solid #e0e4ea", pt: 1.5 }}>
             <Button type="button" variant="outlined" onClick={goToNextStep} sx={{ textTransform: "none", fontSize: 12 }}>
               Next
@@ -223,38 +160,44 @@ function SchemeProposalWizard() {
           </Box>
       </Box>
       {activeStep > 0 && (
-        <Paper
-          elevation={0}
-          sx={{ p: { xs: 2, md: 2.5 }, border: "1px solid #e0e4ea", borderRadius: 2, bgcolor: "#f9fafb" }}
-        >
-          <Typography component="h1" sx={{ color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
-            {activeStep + 1}. {steps[activeStep]}
-          </Typography>
-          <Typography sx={{ mt: 1, color: "#65736b", fontSize: 13 }}>
-            This step will be added when you provide its form fields.
-          </Typography>
-          {activeStep === 1 && basicInfoSaved && (
+        <Box component="form" noValidate onChange={() => setSavedStepIndex(null)} onSubmit={saveAndGoToNextStep}>
+          <ActiveStepForm />
+          {savedStepIndex !== null && activeStep === savedStepIndex + 1 && (
             <Typography role="status" sx={{ mt: 1, color: "#087638", fontSize: 12 }}>
-              Basic Info saved for this wizard session.
+              {proposalSteps[savedStepIndex].label} is retained while this wizard is open. Draft saving to the server is not connected yet.
             </Typography>
           )}
           <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-            <Button variant="outlined" onClick={() => setActiveStep((currentStep) => currentStep - 1)} sx={{ textTransform: "none" }}>
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={() => {
+                setSavedStepIndex(null);
+                setActiveStep((currentStep) => currentStep - 1);
+              }}
+              sx={{ textTransform: "none" }}
+            >
               Previous
             </Button>
-            {activeStep < steps.length - 1 ? (
-              <Button variant="contained" onClick={() => setActiveStep((currentStep) => currentStep + 1)} sx={{ textTransform: "none" }}>
-                Next
-              </Button>
+            {activeStep < proposalSteps.length - 1 ? (
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button type="button" variant="outlined" onClick={goToNextStep} sx={{ textTransform: "none" }}>
+                  Next
+                </Button>
+                <Button type="submit" variant="contained" sx={{ textTransform: "none" }}>
+                  Save &amp; Next
+                </Button>
+              </Box>
             ) : (
-              <Button variant="contained" disabled sx={{ textTransform: "none" }}>
+              <Button type="button" variant="contained" disabled sx={{ textTransform: "none" }}>
                 Submit
               </Button>
             )}
           </Box>
-        </Paper>
+        </Box>
       )}
-    </Box>
+      </Box>
+    </FormProvider>
   );
 }
 

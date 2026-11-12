@@ -3026,7 +3026,7 @@
   line-height: 1;
 }
 
-.landing-section--glance blockquote::before {
+/* .landing-section--glance blockquote::before {
   content: "â€œ";
   top: 4px;
   left: 6px;
@@ -3036,7 +3036,7 @@
   content: "â€";
   right: 6px;
   bottom: 3px;
-}
+} */
 
 @media (max-width: 980px) {
   .landing-hero {
@@ -4573,7 +4573,8 @@
   flex: 0 0 112px;
   align-items: center;
   justify-content: center;
-  width: 112px;
+  /* width: 112px; */
+  width: 100%;
   min-height: 46px;
   color: #173f2c;
   background: repeating-linear-gradient(135deg, #edf4e9, #edf4e9 5px, #dcebd9 5px, #dcebd9 10px);
