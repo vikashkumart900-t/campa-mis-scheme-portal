@@ -4,15 +4,15 @@ export const proposalSteps = [
     label: "Basic Info",
     fields: [
       "schemeName",
-      "implementingAgency",
-      "nodalOfficerName",
+      "organizationName",
+      "officerName",
       "designation",
       "email",
-      "phone",
+      "mobile",
       "aadhaarNumber",
-      "proposalDate",
+      "dateOfProposal",
       "expectedCompletionDate",
-      "financialOutlay",
+      "proposedFinancialOutlay",
       "schemeDuration"
     ]
   },

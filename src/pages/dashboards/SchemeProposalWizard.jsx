@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { useSearchParams } from "react-router-dom";
 import {
   Box,
   Button,
@@ -14,6 +15,7 @@ import TechExitDeclarationStep from "../../features/scheme-proposal/steps/TechEx
 import InstallmentStep from "../../features/scheme-proposal/steps/InstallmentStep";
 import ReviewSubmissionStep from "../../features/scheme-proposal/steps/ReviewSubmissionStep";
 import { proposalSteps } from "../../features/scheme-proposal/config/proposalSteps";
+import { apiUrls } from "../../api/urls";
 
 const laterStepComponents = [
   ObjectivesFundingStep,
@@ -26,6 +28,8 @@ const laterStepComponents = [
 ];
 
 function SchemeProposalWizard() {
+  const [searchParams] = useSearchParams();
+  const schemeId = searchParams.get("schemeId");
   const [activeStep, setActiveStep] = useState(0);
   const [savedStepIndex, setSavedStepIndex] = useState(null);
   const formMethods = useForm({
@@ -34,20 +38,73 @@ function SchemeProposalWizard() {
     defaultValues: {
       ...Object.fromEntries(proposalSteps.slice(1).map(({ id }) => [id, { username: "" }])),
       schemeName: "",
-      implementingAgency: "",
-      nodalOfficerName: "",
+      organizationName: "",
+      officerName: "",
       designation: "",
       email: "",
-      phone: "",
+      mobile: "",
       aadhaarNumber: "",
-      proposalDate: "",
+      dateOfProposal: "",
       expectedCompletionDate: "",
-      financialOutlay: "",
+      proposedFinancialOutlay: "",
       schemeDuration: ""
     }
   });
-  const { trigger } = formMethods;
+  const { getValues, setValue, trigger } = formMethods;
   const ActiveStepForm = activeStep > 0 ? laterStepComponents[activeStep - 1] : null;
+  const [savingBasicInfo, setSavingBasicInfo] = useState(false);
+  const [basicInfoError, setBasicInfoError] = useState("");
+  const [loadedSchemeId, setLoadedSchemeId] = useState(null);
+  const [schemeSubmissionIds, setSchemeSubmissionIds] = useState(null);
+  const [schemeNameError, setSchemeNameError] = useState("");
+  const schemeNameLoading = Boolean(schemeId && schemeId !== loadedSchemeId);
+
+  useEffect(() => {
+    if (!schemeId) return undefined;
+
+    const controller = new AbortController();
+
+    fetch(apiUrls.schemeDetails(schemeId), { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error((await response.text()) || `Request failed with status ${response.status}`);
+        }
+        const details = await response.json();
+        if (!details || typeof details !== "object" || Array.isArray(details)) {
+          throw new Error("The scheme details API returned unexpected data.");
+        }
+        if (typeof details.schemeName !== "string" || !details.schemeName.trim()) {
+          throw new Error("The selected scheme details did not include a scheme name.");
+        }
+        if (typeof details.organizationName !== "string" || !details.organizationName.trim()) {
+          throw new Error("The selected scheme details did not include an organization name.");
+        }
+        const submissionIds = {
+          organizationId: Number(details.organizationId),
+          divisionId: Number(details.divisionId ?? details.programDivisionId),
+          schemeId: Number(schemeId)
+        };
+        if (Object.values(submissionIds).some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+          throw new Error("The selected scheme details did not include valid organization, division, and scheme IDs.");
+        }
+        setValue("schemeName", details.schemeName.trim(), { shouldValidate: true });
+        setValue("organizationName", details.organizationName.trim(), { shouldValidate: true });
+        setSchemeSubmissionIds(submissionIds);
+        setSchemeNameError("");
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setSchemeNameError(error.message);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoadedSchemeId(schemeId);
+        }
+      });
+
+    return () => controller.abort();
+  }, [schemeId, setValue]);
 
   const validateCurrentStep = async () => {
     const fields = proposalSteps[activeStep].fields;
@@ -55,13 +112,75 @@ function SchemeProposalWizard() {
   };
 
   const goToNextStep = async () => {
+    if (activeStep === 0) {
+      await saveAndGoToNextStep();
+      return;
+    }
     if (!(await validateCurrentStep())) return;
     setActiveStep((currentStep) => Math.min(currentStep + 1, proposalSteps.length - 1));
   };
 
   const saveAndGoToNextStep = async (event) => {
-    event.preventDefault();
+    if (event) event.preventDefault();
     if (!(await validateCurrentStep())) return;
+
+    if (activeStep === 0) {
+      setSavingBasicInfo(true);
+      setBasicInfoError("");
+      try {
+        const values = getValues();
+        const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+        if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+          throw new Error("Your session is missing an access token. Please sign in again.");
+        }
+        if (!schemeSubmissionIds || schemeSubmissionIds.schemeId !== Number(schemeId)) {
+          throw new Error("The selected scheme is missing organization, division, or scheme IDs. Select the scheme again.");
+        }
+        const payload = {
+          schemeName: values.schemeName.trim(),
+          organizationName: values.organizationName.trim(),
+          officerName: values.officerName.trim(),
+          designation: values.designation.trim(),
+          email: values.email.trim(),
+          mobile: values.mobile.trim(),
+          aadhaarNumber: values.aadhaarNumber.trim(),
+          schemeDuration: values.schemeDuration.trim(),
+          proposedFinancialOutlay: values.proposedFinancialOutlay,
+          dateOfProposal: values.dateOfProposal,
+          expectedCompletionDate: values.expectedCompletionDate,
+          organizationId: schemeSubmissionIds.organizationId,
+          divisionId: schemeSubmissionIds.divisionId,
+          schemeId: schemeSubmissionIds.schemeId
+        };
+        const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+        const response = await fetch(apiUrls.nodalOfficer, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: authorization
+          },
+          body: JSON.stringify(payload)
+        });
+        const responseText = await response.text();
+        let result;
+        if (responseText) {
+          try {
+            result = JSON.parse(responseText);
+          } catch {
+            result = { message: responseText };
+          }
+        }
+        if (!response.ok || result?.success === false) {
+          throw new Error(result?.message || result?.error || `Request failed with status ${response.status}`);
+        }
+      } catch (error) {
+        setBasicInfoError(`Unable to save nodal officer details: ${error.message}`);
+        return;
+      } finally {
+        setSavingBasicInfo(false);
+      }
+    }
+
     setSavedStepIndex(activeStep);
     setActiveStep((currentStep) => Math.min(currentStep + 1, proposalSteps.length - 1));
   };
@@ -141,21 +260,28 @@ function SchemeProposalWizard() {
       <Box
         component="form"
         noValidate
-        onChange={() => setSavedStepIndex(null)}
+        onChange={() => {
+          setSavedStepIndex(null);
+          setBasicInfoError("");
+        }}
         onSubmit={saveAndGoToNextStep}
         sx={{ display: activeStep === 0 ? "block" : "none" }}
       >
+        {schemeNameLoading && <Typography role="status" sx={{ mb: 1, color: "text.secondary", fontSize: 12 }}>Loading selected scheme...</Typography>}
+        {schemeNameError && <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>Unable to load selected scheme: {schemeNameError}</Typography>}
           <BasicInfoStep />
+          {basicInfoError && <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>{basicInfoError}</Typography>}
           <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, borderTop: "1px solid #e0e4ea", pt: 1.5 }}>
-            <Button type="button" variant="outlined" onClick={goToNextStep} sx={{ textTransform: "none", fontSize: 12 }}>
+          <Button type="button" variant="outlined" disabled={savingBasicInfo || schemeNameLoading || Boolean(schemeNameError)} onClick={goToNextStep} sx={{ textTransform: "none", fontSize: 12 }}>
               Next
             </Button>
             <Button
               type="submit"
               variant="contained"
+              disabled={savingBasicInfo || schemeNameLoading || Boolean(schemeNameError)}
               sx={{ bgcolor: "#009b43", fontSize: 12, fontWeight: 700, textTransform: "none", "&:hover": { bgcolor: "#087f3d" } }}
             >
-              Save &amp; Next
+              {savingBasicInfo ? "Saving..." : "Save &amp; Next"}
             </Button>
           </Box>
       </Box>

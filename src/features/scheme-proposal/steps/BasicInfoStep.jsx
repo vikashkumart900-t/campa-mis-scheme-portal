@@ -67,11 +67,11 @@ function BasicInfoStep() {
           2. Nodal Officer Details
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-          <FormField id="implementingAgency" label="2.1 Name of Implementing Agency">
-            <TextField id="implementingAgency" fullWidth size="small" sx={inputSx} {...getFieldProps("implementingAgency")} />
+          <FormField id="organizationName" label="2.1 Name of Implementing Agency">
+            <TextField id="organizationName" fullWidth size="small" sx={inputSx} {...getFieldProps("organizationName")} />
           </FormField>
-          <FormField id="nodalOfficerName" label="2.2 Name of the Nodal Officer of Implementing Agency">
-            <TextField id="nodalOfficerName" fullWidth size="small" sx={inputSx} {...getFieldProps("nodalOfficerName")} />
+          <FormField id="officerName" label="2.2 Name of the Nodal Officer of Implementing Agency">
+            <TextField id="officerName" fullWidth size="small" sx={inputSx} {...getFieldProps("officerName")} />
           </FormField>
           <FormField id="designation" label="2.3 Designation">
             <TextField id="designation" fullWidth size="small" sx={inputSx} {...getFieldProps("designation")} />
@@ -88,8 +88,8 @@ function BasicInfoStep() {
               })}
             />
           </FormField>
-          <FormField id="phone" label="2.5 Phone No">
-            <TextField id="phone" type="tel" fullWidth size="small" sx={inputSx} {...getFieldProps("phone")} />
+          <FormField id="mobile" label="2.5 Phone No">
+            <TextField id="mobile" type="tel" fullWidth size="small" sx={inputSx} {...getFieldProps("mobile")} />
           </FormField>
           <FormField id="aadhaarNumber" label="2.6 Aadhaar No." required>
             <TextField
@@ -117,8 +117,8 @@ function BasicInfoStep() {
           3. Scheme Details
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-          <FormField id="proposalDate" label="3.1 Date of Proposal">
-            <TextField id="proposalDate" type="date" fullWidth size="small" sx={inputSx} {...getFieldProps("proposalDate")} />
+          <FormField id="dateOfProposal" label="3.1 Date of Proposal">
+            <TextField id="dateOfProposal" type="date" fullWidth size="small" sx={inputSx} {...getFieldProps("dateOfProposal")} />
           </FormField>
           <FormField id="expectedCompletionDate" label="3.2 Expected Completion Date" required>
             <TextField
@@ -130,16 +130,16 @@ function BasicInfoStep() {
               {...getFieldProps("expectedCompletionDate", { required: "Expected completion date is required." })}
             />
           </FormField>
-          <FormField id="financialOutlay" label="3.3 Proposed Financial Outlay (Rs. in Lakhs)" required>
+          <FormField id="proposedFinancialOutlay" label="3.3 Proposed Financial Outlay (Rs. in Lakhs)" required>
             <TextField
-              id="financialOutlay"
+              id="proposedFinancialOutlay"
               type="number"
               inputProps={{ min: 0, step: "any" }}
               placeholder="Enter amount in lakhs"
               fullWidth
               size="small"
               sx={inputSx}
-              {...getFieldProps("financialOutlay", {
+              {...getFieldProps("proposedFinancialOutlay", {
                 required: "Financial outlay is required.",
                 valueAsNumber: true,
                 min: { value: 0, message: "Financial outlay cannot be negative." }

@@ -12,6 +12,7 @@ export const apiUrls = {
   forgotPassword: `${campaApiBaseUrl}/forgot-password`,
   verifyResetOtp: `${campaApiBaseUrl}/verify-reset-otp`,
   resetPassword: `${campaApiBaseUrl}/reset-password`,
+  nodalOfficer: `${apiBaseUrl}/mis/nodal-officer`,
   misLogin: `${campaApiBaseUrl}/mis/login`,
   pariveshLogin: `${campaApiBaseUrl}/parivesh/login`
 };
