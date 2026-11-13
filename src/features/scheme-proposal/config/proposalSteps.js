@@ -25,10 +25,10 @@ export const proposalSteps = [
       "objectivesFunding.hasOtherFundingAgency"
     ]
   },
-  { id: "deliverables", label: "Deliverables", fields: ["deliverables.username"], required: false },
-  { id: "evaluationResearch", label: "Evaluation & Research", fields: ["evaluationResearch.username"], required: false },
-  { id: "documentsEmployment", label: "Documents & Employment", fields: ["documentsEmployment.username"], required: false },
-  { id: "techExitDeclaration", label: "Tech, Exit & Declaration", fields: ["techExitDeclaration.username"], required: false },
-  { id: "installment", label: "Installment", fields: ["installment.username"], required: false },
+  { id: "deliverables", label: "Deliverables", fields: [] },
+  { id: "evaluationResearch", label: "Evaluation & Research", fields: [] },
+  { id: "documentsEmployment", label: "Documents & Employment", fields: [] },
+  { id: "techExitDeclaration", label: "Tech, Exit & Declaration", fields: [] },
+  { id: "installment", label: "Installment", fields: [] },
   { id: "reviewSubmission", label: "Review & Final Submission", fields: ["reviewSubmission.username"], required: false }
 ];

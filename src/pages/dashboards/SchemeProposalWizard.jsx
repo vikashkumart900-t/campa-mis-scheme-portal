@@ -36,7 +36,7 @@ function SchemeProposalWizard() {
     mode: "onBlur",
     shouldUnregister: false,
     defaultValues: {
-      ...Object.fromEntries(proposalSteps.slice(1).map(({ id }) => [id, { username: "" }])),
+      reviewSubmission: { username: "" },
       objectivesFunding: {
         objectives: [],
         hasStateComponents: "",
