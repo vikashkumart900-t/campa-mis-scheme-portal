@@ -16,7 +16,15 @@ export const proposalSteps = [
       "schemeDuration"
     ]
   },
-  { id: "objectivesFunding", label: "Objectives & Funding", fields: ["objectivesFunding.username"], required: false },
+  {
+    id: "objectivesFunding",
+    label: "Objectives & Funding",
+    fields: [
+      "objectivesFunding.hasStateComponents",
+      "objectivesFunding.stateBoardAgreement",
+      "objectivesFunding.hasOtherFundingAgency"
+    ]
+  },
   { id: "deliverables", label: "Deliverables", fields: ["deliverables.username"], required: false },
   { id: "evaluationResearch", label: "Evaluation & Research", fields: ["evaluationResearch.username"], required: false },
   { id: "documentsEmployment", label: "Documents & Employment", fields: ["documentsEmployment.username"], required: false },

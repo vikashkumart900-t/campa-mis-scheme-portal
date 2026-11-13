@@ -50,9 +50,6 @@ function IADashboard({ children, pageTitle = "Dashboard" }) {
   const navigation = (
     <Box sx={{ display: "flex", height: "100%", flexDirection: "column", px: 2, py: 2.5 }}>
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: 1, pb: 4 }}>
-        <Avatar variant="rounded" sx={{ bgcolor: "#dcebdd", color: "#174b35", width: 42, height: 42 }}>
-          <ForestOutlinedIcon />
-        </Avatar>
         <Box>
           <Typography sx={{ color: "#fff", fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>CAMPA</Typography>
           <Typography sx={{ color: "#bfd5c7", fontSize: 10, letterSpacing: 1 }}>SCHEME MIS</Typography>

@@ -37,6 +37,12 @@ function SchemeProposalWizard() {
     shouldUnregister: false,
     defaultValues: {
       ...Object.fromEntries(proposalSteps.slice(1).map(({ id }) => [id, { username: "" }])),
+      objectivesFunding: {
+        objectives: [],
+        hasStateComponents: "",
+        stateBoardAgreement: "",
+        hasOtherFundingAgency: ""
+      },
       schemeName: "",
       organizationName: "",
       officerName: "",
