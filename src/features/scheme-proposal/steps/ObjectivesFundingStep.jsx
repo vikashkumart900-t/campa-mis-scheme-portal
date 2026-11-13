@@ -91,7 +91,7 @@ function parseObjectivesWorksheet(rows) {
   }));
 }
 
-function ObjectiveRow({ index, field, control, register, errors, onRemove, canRemove }) {
+function ObjectiveRow({ index, field, control, register, errors, onRemove }) {
   const minorObjectivesPath = `objectivesFunding.objectives.${index}.minorObjectives`;
   const { fields: minorFields, append, remove } = useFieldArray({
     control,
@@ -177,7 +177,6 @@ function ObjectiveRow({ index, field, control, register, errors, onRemove, canRe
         <IconButton
           aria-label={`Remove major objective ${index + 1}`}
           onClick={onRemove}
-          disabled={!canRemove}
           size="small"
           sx={{
             color: "#fff",
@@ -395,6 +394,8 @@ function ObjectivesFundingStep() {
             variant="outlined"
             onClick={downloadTemplate}
             sx={{
+              alignSelf: "start",
+              mt: { xs: 0, md: "1.3rem" },
               minHeight: 34,
               borderColor: "#cfd7e2",
               color: "#132e4c",
@@ -459,7 +460,6 @@ function ObjectivesFundingStep() {
                     register={register}
                     errors={errors}
                     onRemove={() => remove(index)}
-                    canRemove={fields.length > 1}
                   />
                 ))}
               </TableBody>
