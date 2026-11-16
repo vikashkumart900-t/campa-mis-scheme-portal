@@ -26,7 +26,15 @@ export const proposalSteps = [
     ]
   },
   { id: "deliverables", label: "Deliverables", fields: [] },
-  { id: "evaluationResearch", label: "Evaluation & Research", fields: [] },
+  {
+    id: "evaluationResearch",
+    label: "Evaluation & Research",
+    fields: [
+      "evaluationResearch.monitoringAnnually",
+      "evaluationResearch.midtermEvaluation",
+      "evaluationResearch.researchAspects"
+    ]
+  },
   { id: "documentsEmployment", label: "Documents & Employment", fields: [] },
   { id: "techExitDeclaration", label: "Tech, Exit & Declaration", fields: [] },
   { id: "installment", label: "Installment", fields: [] },

@@ -43,6 +43,28 @@ function SchemeProposalWizard() {
         stateBoardAgreement: "",
         hasOtherFundingAgency: ""
       },
+      deliverables: {
+        items: [
+          {
+            description: "",
+            unit: "",
+            initiationDate: "",
+            closingDate: "",
+            financialOutlay: "",
+            remarks: "",
+            attachment: null
+          }
+        ],
+        expenditureType: "yearWise",
+        nationalImportance: [{ description: "" }],
+        internationalFootprints: [{ description: "" }]
+      },
+      evaluationResearch: {
+        monitoringAnnually: "",
+        midtermEvaluation: "",
+        researchAspects: "",
+        researchHighlights: ""
+      },
       schemeName: "",
       organizationName: "",
       officerName: "",
@@ -113,6 +135,29 @@ function SchemeProposalWizard() {
   }, [schemeId, setValue]);
 
   const validateCurrentStep = async () => {
+    if (proposalSteps[activeStep].id === "deliverables") {
+      const deliverables = getValues("deliverables") || {};
+      const itemFields = (deliverables.items || []).flatMap((_, index) => [
+        `deliverables.items.${index}.description`,
+        `deliverables.items.${index}.unit`,
+        `deliverables.items.${index}.initiationDate`,
+        `deliverables.items.${index}.closingDate`,
+        `deliverables.items.${index}.financialOutlay`
+      ]);
+      const nationalFields = (deliverables.nationalImportance || []).map(
+        (_, index) => `deliverables.nationalImportance.${index}.description`
+      );
+      const internationalFields = (deliverables.internationalFootprints || []).map(
+        (_, index) => `deliverables.internationalFootprints.${index}.description`
+      );
+      return trigger([
+        "deliverables.expenditureType",
+        ...itemFields,
+        ...nationalFields,
+        ...internationalFields
+      ]);
+    }
+
     const fields = proposalSteps[activeStep].fields;
     return fields.length === 0 || trigger(fields);
   };
