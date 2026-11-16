@@ -75,6 +75,14 @@ function SchemeProposalWizard() {
         selectedFinancialYear: "",
         employmentRows: []
       },
+      techExitDeclaration: {
+        technologyIntervention: "",
+        technologyDocument: null,
+        exitProtocol: "",
+        exitProtocolDocument: null,
+        declaration1: false,
+        declaration2: false
+      },
       schemeName: "",
       organizationName: "",
       officerName: "",
