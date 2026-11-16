@@ -5,13 +5,14 @@ import {
   FormControl,
   FormControlLabel,
   FormHelperText,
+  IconButton,
   Paper,
   Radio,
   TextField,
   Typography
 } from "@mui/material";
-import { Sparkles } from "lucide-react";
-import { useFormContext } from "react-hook-form";
+import { Info, Plus, Sparkles, Trash2 } from "lucide-react";
+import { useFieldArray, useFormContext } from "react-hook-form";
 
 const sectionSx = {
   mb: 1.5,
@@ -30,7 +31,7 @@ const fieldLabelSx = {
 };
 const inputSx = {
   "& .MuiInputBase-root": { bgcolor: "#fff", fontSize: 12 },
-  "& .MuiInputBase-input": { py: 1 },
+  "& .MuiInputBase-input": { py: 0.125, px: 1.25, fontSize: 12 },
   "& .MuiOutlinedInput-notchedOutline": { borderColor: "#dce2e8" }
 };
 
@@ -64,15 +65,19 @@ function extractiveSummary(text) {
     .join(" ");
 }
 
-function EvaluationQuestion({ name, label, register, error }) {
+function EvaluationQuestion({ name, label, register, validate, checked, onSelect, error, children }) {
+  const radioRegistration = register(name, { validate });
+
   return (
     <FormControl error={Boolean(error)} fullWidth>
       <Box
         sx={{
           display: "flex",
           minHeight: 44,
-          alignItems: "center",
+          flexDirection: "column",
+          justifyContent: "center",
           px: 1,
+          py: 0.5,
           border: "1px solid #dfe4ea",
           borderRadius: 1.5,
           bgcolor: "#fff"
@@ -84,27 +89,214 @@ function EvaluationQuestion({ name, label, register, error }) {
             <Radio
               size="small"
               value="yes"
-              {...register(name, { required: "This evaluation commitment is required." })}
+              checked={checked}
+              {...radioRegistration}
+              onChange={(event) => {
+                radioRegistration.onChange(event);
+                onSelect();
+              }}
             />
           }
           label={label}
         />
+        {children}
       </Box>
       {error && <FormHelperText>{error.message}</FormHelperText>}
     </FormControl>
   );
 }
 
+function EvaluationDetailFields({ name, label }) {
+  const {
+    control,
+    register,
+    watch,
+    formState: { errors }
+  } = useFormContext();
+  const { fields, append, remove } = useFieldArray({ control, name });
+  const values = watch(name) || [];
+  const fieldName = name.split(".").pop();
+  const rowErrors = errors?.evaluationResearch?.[fieldName];
+
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "minmax(0, 1fr) 34px", md: "minmax(0, 1fr) 34px minmax(0, 0.85fr)" },
+        alignItems: "start",
+        columnGap: 1.5,
+        rowGap: 1,
+        ml: 3.5,
+        mt: 1
+      }}
+    >
+      <Typography sx={{ ...fieldLabelSx, gridColumn: { xs: "1 / -1", md: "1" } }}>
+        Details (max 500 words) <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+      </Typography>
+      <Box sx={{ display: { xs: "none", md: "block" } }} />
+      <Typography sx={{ ...fieldLabelSx, gridColumn: { xs: "1 / -1", md: "3" }, display: "flex", alignItems: "center", gap: 0.5 }}>
+        Upload Supporting Document <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+        <Info size={12} color="#1976d2" title="Select a supporting document" />
+      </Typography>
+      {fields.map((row, index) => {
+        const rowError = rowErrors?.[index];
+        const attachment = values[index]?.attachment;
+        const attachmentName = attachment?.[0]?.name || "";
+        const isFirstRow = index === 0;
+        const detailsPath = `${name}.${index}.details`;
+        const attachmentPath = `${name}.${index}.attachment`;
+
+        return (
+          <Box
+            key={row.id}
+            sx={{
+              display: "grid",
+              gridColumn: "1 / -1",
+              gridTemplateColumns: {
+                xs: "minmax(0, 1fr) 34px",
+                md: "minmax(0, 1fr) 34px minmax(0, 0.85fr)"
+              },
+              alignItems: "start",
+              columnGap: 1.5,
+              rowGap: 1,
+              "& > *": { minWidth: 0 }
+            }}
+          >
+            <TextField
+              placeholder={`Enter ${label.toLowerCase()} details (max 500 words)`}
+              fullWidth
+              multiline
+              minRows={1}
+              size="small"
+              sx={inputSx}
+              error={Boolean(rowError?.details)}
+              helperText={rowError?.details?.message}
+              {...register(detailsPath, {
+                required: `${label} details are required.`,
+                validate: (value) => (
+                  value.trim().split(/\s+/).filter(Boolean).length <= 500
+                    || "Details must be 500 words or fewer."
+                )
+              })}
+            />
+            {isFirstRow ? (
+              <IconButton
+                type="button"
+                aria-label={`Add ${label.toLowerCase()} details`}
+                onClick={() => append({ details: "", attachment: null })}
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 1.5,
+                  bgcolor: "#0b6037",
+                  color: "#fff",
+                  "&:hover": { bgcolor: "#07522f" }
+                }}
+              >
+                <Plus size={16} />
+              </IconButton>
+            ) : (
+              <IconButton
+                type="button"
+                aria-label={`Remove ${label.toLowerCase()} detail ${index + 1}`}
+                onClick={() => remove(index)}
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 1.5,
+                  bgcolor: "#e52b2e",
+                  color: "#fff",
+                  "&:hover": { bgcolor: "#c81e24" }
+                }}
+              >
+                <Trash2 size={16} />
+              </IconButton>
+            )}
+            {isFirstRow && (
+              <Box sx={{ gridColumn: { xs: "1 / -1", md: "3" }, minWidth: 0 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    minHeight: 34,
+                    alignItems: "center",
+                    overflow: "hidden",
+                    border: "1px solid #dce2e8",
+                    borderRadius: 1,
+                    bgcolor: "#fff"
+                  }}
+                >
+                  <Button
+                    component="label"
+                    sx={{
+                      height: 32,
+                      px: 1.5,
+                      borderRight: "1px solid #dce2e8",
+                      borderRadius: 0,
+                      color: "#132e4c",
+                      bgcolor: "#f1f4f8",
+                      fontSize: 10,
+                      textTransform: "none",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    Choose File
+                    <input
+                      type="file"
+                      hidden
+                      {...register(attachmentPath, { required: "A supporting document is required." })}
+                    />
+                  </Button>
+                  <Typography
+                    aria-live="polite"
+                    sx={{
+                      overflow: "hidden",
+                      px: 1.25,
+                      color: "#344457",
+                      fontSize: 11,
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {attachmentName || "No file chosen"}
+                  </Typography>
+                </Box>
+                {rowError?.attachment && (
+                  <FormHelperText error sx={{ m: 0 }}>
+                    {rowError.attachment.message}
+                  </FormHelperText>
+                )}
+              </Box>
+            )}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
 function EvaluationResearchStep() {
   const {
     register,
+    getValues,
     setValue,
+    clearErrors,
     watch,
     formState: { errors }
   } = useFormContext();
   const [summaryStatus, setSummaryStatus] = useState("");
   const researchAspects = watch("evaluationResearch.researchAspects") || "";
+  const monitoringAnnually = watch("evaluationResearch.monitoringAnnually");
+  const midtermEvaluation = watch("evaluationResearch.midtermEvaluation");
   const researchError = errors?.evaluationResearch?.researchAspects;
+  const validateEvaluationSelection = () => (
+    getValues("evaluationResearch.monitoringAnnually") === "yes"
+      || getValues("evaluationResearch.midtermEvaluation") === "yes"
+      || "Select an evaluation commitment."
+  );
+  const clearEvaluationSelectionErrors = () => clearErrors([
+    "evaluationResearch.monitoringAnnually",
+    "evaluationResearch.midtermEvaluation"
+  ]);
 
   const summarizeResearch = () => {
     const summary = extractiveSummary(researchAspects.trim());
@@ -131,14 +323,42 @@ function EvaluationResearchStep() {
             name="evaluationResearch.monitoringAnnually"
             label="7.1 Monitoring and Evaluation Annually *"
             register={register}
+            validate={validateEvaluationSelection}
+            checked={monitoringAnnually === "yes"}
+            onSelect={() => {
+              setValue("evaluationResearch.monitoringAnnually", "yes", { shouldDirty: true });
+              setValue("evaluationResearch.midtermEvaluation", "", { shouldDirty: true });
+              clearEvaluationSelectionErrors();
+            }}
             error={errors?.evaluationResearch?.monitoringAnnually}
-          />
+          >
+            {monitoringAnnually === "yes" && (
+              <EvaluationDetailFields
+                name="evaluationResearch.monitoringAnnuallyItems"
+                label="Monitoring and evaluation"
+              />
+            )}
+          </EvaluationQuestion>
           <EvaluationQuestion
             name="evaluationResearch.midtermEvaluation"
             label="7.2 Midterm Evaluation *"
             register={register}
+            validate={validateEvaluationSelection}
+            checked={midtermEvaluation === "yes"}
+            onSelect={() => {
+              setValue("evaluationResearch.midtermEvaluation", "yes", { shouldDirty: true });
+              setValue("evaluationResearch.monitoringAnnually", "", { shouldDirty: true });
+              clearEvaluationSelectionErrors();
+            }}
             error={errors?.evaluationResearch?.midtermEvaluation}
-          />
+          >
+            {midtermEvaluation === "yes" && (
+              <EvaluationDetailFields
+                name="evaluationResearch.midtermEvaluationItems"
+                label="Midterm evaluation"
+              />
+            )}
+          </EvaluationQuestion>
         </Box>
       </Paper>
 

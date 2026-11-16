@@ -61,7 +61,9 @@ function SchemeProposalWizard() {
       },
       evaluationResearch: {
         monitoringAnnually: "",
+        monitoringAnnuallyItems: [{ details: "", attachment: null }],
         midtermEvaluation: "",
+        midtermEvaluationItems: [{ details: "", attachment: null }],
         researchAspects: "",
         researchHighlights: ""
       },
@@ -135,6 +137,23 @@ function SchemeProposalWizard() {
   }, [schemeId, setValue]);
 
   const validateCurrentStep = async () => {
+    if (proposalSteps[activeStep].id === "evaluationResearch") {
+      const evaluationResearch = getValues("evaluationResearch") || {};
+      const monitoringFields = evaluationResearch.monitoringAnnually === "yes"
+        ? (evaluationResearch.monitoringAnnuallyItems || []).flatMap((_, index) => [
+          `evaluationResearch.monitoringAnnuallyItems.${index}.details`,
+          `evaluationResearch.monitoringAnnuallyItems.${index}.attachment`
+        ])
+        : [];
+      const midtermFields = evaluationResearch.midtermEvaluation === "yes"
+        ? (evaluationResearch.midtermEvaluationItems || []).flatMap((_, index) => [
+          `evaluationResearch.midtermEvaluationItems.${index}.details`,
+          `evaluationResearch.midtermEvaluationItems.${index}.attachment`
+        ])
+        : [];
+      return trigger([...proposalSteps[activeStep].fields, ...monitoringFields, ...midtermFields]);
+    }
+
     if (proposalSteps[activeStep].id === "deliverables") {
       const deliverables = getValues("deliverables") || {};
       const itemFields = (deliverables.items || []).flatMap((_, index) => [
