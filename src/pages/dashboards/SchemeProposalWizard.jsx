@@ -67,6 +67,14 @@ function SchemeProposalWizard() {
         researchAspects: "",
         researchHighlights: ""
       },
+      documentsEmployment: {
+        capacityProgramDetails: "",
+        kmlFiles: [{ description: "", file: null }],
+        imageDescription: "",
+        imageFiles: null,
+        selectedFinancialYear: "",
+        employmentRows: []
+      },
       schemeName: "",
       organizationName: "",
       officerName: "",
@@ -80,7 +88,7 @@ function SchemeProposalWizard() {
       schemeDuration: ""
     }
   });
-  const { getValues, setValue, trigger } = formMethods;
+  const { getValues, setValue, setError, clearErrors, trigger } = formMethods;
   const ActiveStepForm = activeStep > 0 ? laterStepComponents[activeStep - 1] : null;
   const [savingBasicInfo, setSavingBasicInfo] = useState(false);
   const [basicInfoError, setBasicInfoError] = useState("");
@@ -174,6 +182,33 @@ function SchemeProposalWizard() {
         ...itemFields,
         ...nationalFields,
         ...internationalFields
+      ]);
+    }
+
+    if (proposalSteps[activeStep].id === "documentsEmployment") {
+      const documentsEmployment = getValues("documentsEmployment") || {};
+      const kmlFields = (documentsEmployment.kmlFiles || []).flatMap((_, index) => [
+        `documentsEmployment.kmlFiles.${index}.description`,
+        `documentsEmployment.kmlFiles.${index}.file`
+      ]);
+      const employmentFields = (documentsEmployment.employmentRows || []).flatMap((_, index) => [
+        `documentsEmployment.employmentRows.${index}.laborCost`,
+        `documentsEmployment.employmentRows.${index}.mandays`,
+        `documentsEmployment.employmentRows.${index}.tribals`,
+        `documentsEmployment.employmentRows.${index}.forestDwellers`
+      ]);
+      if (!documentsEmployment.employmentRows?.length) {
+        setError("documentsEmployment.employmentRows", {
+          type: "required",
+          message: "Add at least one financial year."
+        });
+        return false;
+      }
+      clearErrors("documentsEmployment.employmentRows");
+      return trigger([
+        ...proposalSteps[activeStep].fields,
+        ...kmlFields,
+        ...employmentFields
       ]);
     }
 

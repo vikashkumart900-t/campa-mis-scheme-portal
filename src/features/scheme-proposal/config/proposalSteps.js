@@ -35,7 +35,11 @@ export const proposalSteps = [
       "evaluationResearch.researchAspects"
     ]
   },
-  { id: "documentsEmployment", label: "Documents & Employment", fields: [] },
+  {
+    id: "documentsEmployment",
+    label: "Documents & Employment",
+    fields: ["documentsEmployment.imageDescription", "documentsEmployment.imageFiles"]
+  },
   { id: "techExitDeclaration", label: "Tech, Exit & Declaration", fields: [] },
   { id: "installment", label: "Installment", fields: [] },
   { id: "reviewSubmission", label: "Review & Final Submission", fields: ["reviewSubmission.username"], required: false }
