@@ -42,5 +42,5 @@ export const proposalSteps = [
   },
   { id: "techExitDeclaration", label: "Tech, Exit & Declaration", fields: [] },
   { id: "installment", label: "Installment", fields: [] },
-  { id: "reviewSubmission", label: "Review & Final Submission", fields: ["reviewSubmission.username"], required: false }
+  { id: "reviewSubmission", label: "Review & Final Submission", fields: [] }
 ];

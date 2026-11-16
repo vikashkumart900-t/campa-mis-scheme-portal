@@ -43,6 +43,14 @@ const uploadTitleSx = {
   textTransform: "uppercase"
 };
 
+const formLabelSx = {
+  fontSize: 10,
+  fontWeight: 700,
+  color: "#132e4c",
+  textTransform: "uppercase",
+  mb: 0.75
+};
+
 function TechExitDeclarationStep() {
   const { register } = useFormContext();
   const [technologyDocumentName, setTechnologyDocumentName] = useState("");
@@ -159,7 +167,7 @@ function TechExitDeclarationStep() {
 
         <Box sx={{ display: "grid", gap: 1.25 }}>
           <Box>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#132e4c", textTransform: "uppercase", mb: 0.75 }}>
+            <Typography sx={formLabelSx}>
               15.1 DECLARATION <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
             <Box sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", px: 1.25, py: 0.75 }}>
@@ -182,7 +190,7 @@ function TechExitDeclarationStep() {
           </Box>
 
           <Box>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#132e4c", textTransform: "uppercase", mb: 0.75, mt: 2 }}>
+            <Typography sx={{ ...formLabelSx, mt: 2 }}>
               15.2 DECLARATION <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
             <Box sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", px: 1.25, py: 0.75 }}>

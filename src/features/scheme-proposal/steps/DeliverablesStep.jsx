@@ -45,6 +45,12 @@ const tableHeaderSx = {
   lineHeight: 1.25,
   textTransform: "uppercase"
 };
+const sectionTitleSx = {
+  mb: 2,
+  color: "#132e4c",
+  fontSize: 14,
+  fontWeight: 700
+};
 const tableCellSx = {
   px: 0.75,
   py: 0.75,
@@ -412,7 +418,7 @@ function DeliverablesStep() {
 
   return (
     <Paper elevation={0} sx={sectionSx}>
-      <Typography component="h1" sx={{ mb: 2, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+      <Typography component="h1" sx={sectionTitleSx}>
         6. {step.label}
       </Typography>
 

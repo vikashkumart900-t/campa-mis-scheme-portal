@@ -2,14 +2,21 @@ import { Box, Paper, TextField, Typography } from "@mui/material";
 import { useFormContext } from "react-hook-form";
 
 const inputSx = {
-  "& .MuiInputBase-root": { bgcolor: "#fff", fontSize: 13 },
-  "& .MuiInputLabel-root": { fontSize: 13 }
+  "& .MuiInputBase-root": { bgcolor: "#fff", fontSize: 12 },
+  "& .MuiInputLabel-root": { fontSize: 12 }
 };
 
 const readOnlyInputSx = {
   ...inputSx,
   "& .MuiInputBase-root": { ...inputSx["& .MuiInputBase-root"], bgcolor: "#f1f3f5" },
   "& .MuiInputBase-input": { color: "#667085", cursor: "not-allowed" }
+};
+
+const sectionTitleSx = {
+  mb: 2,
+  color: "#132e4c",
+  fontSize: 14,
+  fontWeight: 700
 };
 
 function FormField({ id, label, required = false, children }) {
@@ -48,7 +55,7 @@ function BasicInfoStep() {
         elevation={0}
         sx={{ mb: 1.5, p: { xs: 2, md: 2.5 }, border: "1px solid #e0e4ea", borderRadius: 2, bgcolor: "#f9fafb" }}
       >
-        <Typography component="h1" sx={{ mb: 2, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+        <Typography component="h1" sx={sectionTitleSx}>
           1. Basic Scheme Information
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
@@ -70,7 +77,7 @@ function BasicInfoStep() {
         elevation={0}
         sx={{ mb: 1.5, p: { xs: 2, md: 2.5 }, border: "1px solid #e0e4ea", borderRadius: 2, bgcolor: "#f9fafb" }}
       >
-        <Typography component="h2" sx={{ mb: 2, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+        <Typography component="h2" sx={sectionTitleSx}>
           2. Nodal Officer Details
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
@@ -137,7 +144,7 @@ function BasicInfoStep() {
         elevation={0}
         sx={{ mb: 1.5, p: { xs: 2, md: 2.5 }, border: "1px solid #e0e4ea", borderRadius: 2, bgcolor: "#f9fafb" }}
       >
-        <Typography component="h2" sx={{ mb: 2, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+        <Typography component="h2" sx={sectionTitleSx}>
           3. Scheme Details
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>

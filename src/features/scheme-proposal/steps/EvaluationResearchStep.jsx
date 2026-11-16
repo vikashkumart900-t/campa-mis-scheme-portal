@@ -29,6 +29,12 @@ const fieldLabelSx = {
   fontWeight: 700,
   textTransform: "uppercase"
 };
+const sectionTitleSx = {
+  mb: 1.5,
+  color: "#132e4c",
+  fontSize: 14,
+  fontWeight: 700
+};
 const inputSx = {
   "& .MuiInputBase-root": { bgcolor: "#fff", fontSize: 12 },
   "& .MuiInputBase-input": { py: 0.125, px: 1.25, fontSize: 12 },
@@ -315,7 +321,7 @@ function EvaluationResearchStep() {
   return (
     <>
       <Paper elevation={0} sx={sectionSx}>
-        <Typography component="h1" sx={{ mb: 1.5, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+        <Typography component="h1" sx={sectionTitleSx}>
           7. Envisaged Monitoring and Evaluation Framework
         </Typography>
         <Box sx={{ display: "grid", gap: 1.25 }}>
@@ -363,7 +369,7 @@ function EvaluationResearchStep() {
       </Paper>
 
       <Paper elevation={0} sx={sectionSx}>
-        <Typography component="h2" sx={{ mb: 1.5, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+        <Typography component="h2" sx={sectionTitleSx}>
           8. Research Aspects
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) auto" }, alignItems: "start", columnGap: 2, rowGap: 1.5 }}>

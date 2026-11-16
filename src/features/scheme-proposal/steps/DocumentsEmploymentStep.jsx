@@ -35,6 +35,21 @@ const fieldLabelSx = {
   fontWeight: 700,
   textTransform: "uppercase"
 };
+const sectionTitleSx = {
+  mb: 1.5,
+  color: "#132e4c",
+  fontSize: 14,
+  fontWeight: 700
+};
+const subSectionTitleSx = {
+  display: "flex",
+  alignItems: "center",
+  gap: 0.5,
+  color: "#132e4c",
+  fontSize: 10,
+  fontWeight: 700,
+  textTransform: "uppercase"
+};
 const tableHeaderSx = {
   px: 1,
   py: 1.25,
@@ -150,7 +165,7 @@ function DocumentsEmploymentStep() {
   return (
     <>
       <Paper elevation={0} sx={sectionSx}>
-        <Typography component="h1" sx={{ mb: 2, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+        <Typography component="h1" sx={sectionTitleSx}>
           9. Capacity Building &amp; Awareness Programmes information collection &amp; Communication
         </Typography>
         <Box sx={{ maxWidth: { xs: "100%", md: "66%" } }}>
@@ -169,13 +184,13 @@ function DocumentsEmploymentStep() {
       </Paper>
 
       <Paper elevation={0} sx={sectionSx}>
-        <Typography component="h2" sx={{ mb: 1.5, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+        <Typography component="h2" sx={sectionTitleSx}>
           11. Scheme supporting documents
         </Typography>
 
         <Paper elevation={0} sx={{ mb: 1.25, p: 1.5, border: "1px solid #e0e4ea", borderRadius: 1.5, bgcolor: "#fff" }}>
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1 }}>
-            <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "#132e4c", fontSize: 11, fontWeight: 700 }}>
+            <Typography component="h3" sx={subSectionTitleSx}>
               11.1 Upload KML files for scheme footprints <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
               <Info size={12} color="#0785c2" title="KML or KMZ files, up to 20 MB each" />
             </Typography>
@@ -264,7 +279,7 @@ function DocumentsEmploymentStep() {
         </Paper>
 
         <Paper elevation={0} sx={{ p: 1.5, border: "1px solid #e0e4ea", borderRadius: 1.5, bgcolor: "#fff" }}>
-          <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 1, color: "#132e4c", fontSize: 11, fontWeight: 700 }}>
+          <Typography component="h3" sx={{ ...subSectionTitleSx, mb: 1 }}>
             11.2 Image Gallery <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             <Info size={12} color="#0785c2" title="JPG, JPEG, or PNG images, up to 2 MB each" />
           </Typography>
@@ -312,7 +327,7 @@ function DocumentsEmploymentStep() {
       </Paper>
 
       <Paper elevation={0} sx={sectionSx}>
-        <Typography component="h2" sx={{ mb: 1.5, color: "#132e4c", fontSize: 14, fontWeight: 700 }}>
+        <Typography component="h2" sx={sectionTitleSx}>
           12. Projected Green Employment / Employment Generation <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
         </Typography>
         <Box sx={{ maxWidth: { xs: "100%", md: "33%" }, mb: 1 }}>
