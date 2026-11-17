@@ -3,7 +3,9 @@ import {
   Box,
   Button,
   Checkbox,
+  FormControl,
   FormControlLabel,
+  FormHelperText,
   IconButton,
   Paper,
   TextField,
@@ -52,9 +54,16 @@ const formLabelSx = {
 };
 
 function TechExitDeclarationStep() {
-  const { register } = useFormContext();
+  const {
+    register,
+    formState: { errors }
+  } = useFormContext();
   const [technologyDocumentName, setTechnologyDocumentName] = useState("");
   const [exitProtocolDocumentName, setExitProtocolDocumentName] = useState("");
+
+  const setFileName = (setter, event) => {
+    setter(event.target.files?.[0]?.name || "");
+  };
 
   return (
     <>
@@ -74,7 +83,16 @@ function TechExitDeclarationStep() {
               minRows={3}
               placeholder="Describe technological interventions (max 500 words)"
               sx={inputSx}
-              {...register("techExitDeclaration.technologyIntervention")}
+              error={Boolean(errors?.techExitDeclaration?.technologyIntervention)}
+              helperText={errors?.techExitDeclaration?.technologyIntervention?.message}
+              {...register("techExitDeclaration.technologyIntervention", {
+                required: "Description is required.",
+                validate: (value) => {
+                  const trimmedValue = value?.trim?.() || "";
+                  if (!trimmedValue) return "Description is required.";
+                  return trimmedValue.split(/\s+/).filter(Boolean).length <= 500 || "Description must be 500 words or fewer.";
+                }
+              })}
             />
           </Box>
 
@@ -82,29 +100,35 @@ function TechExitDeclarationStep() {
             <Typography component="label" sx={uploadTitleSx}>
               UPLOAD SUPPORTING DOCUMENT <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
-            <Box sx={{ display: "flex", minHeight: 34, alignItems: "center", overflow: "hidden", border: "1px solid #cfd7e2", borderRadius: 1, bgcolor: "#fff" }}>
-              <Button
-                component="label"
-                htmlFor="technology-document-upload"
-                sx={{ height: 34, px: 1.5, borderRight: "1px solid #cfd7e2", borderRadius: 0, color: "#132e4c", bgcolor: "#f1f4f8", fontSize: 11, textTransform: "none", whiteSpace: "nowrap" }}
-              >
-                Choose File
-                <input
-                  id="technology-document-upload"
-                  type="file"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  hidden
-                  {...register("techExitDeclaration.technologyDocument", {
-                    onChange: (event) => {
-                      setTechnologyDocumentName(event.target.files?.[0]?.name || "");
-                    }
-                  })}
-                />
-              </Button>
-              <Typography aria-live="polite" sx={{ overflow: "hidden", px: 1.25, color: "#344457", fontSize: 11, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {technologyDocumentName || "No file chosen"}
-              </Typography>
-            </Box>
+            <FormControl fullWidth error={Boolean(errors?.techExitDeclaration?.technologyDocument)}>
+              <Box sx={{ display: "flex", minHeight: 34, alignItems: "center", overflow: "hidden", border: "1px solid #cfd7e2", borderRadius: 1, bgcolor: "#fff" }}>
+                <Button
+                  component="label"
+                  htmlFor="technology-document-upload"
+                  sx={{ height: 34, px: 1.5, borderRight: "1px solid #cfd7e2", borderRadius: 0, color: "#132e4c", bgcolor: "#f1f4f8", fontSize: 11, textTransform: "none", whiteSpace: "nowrap" }}
+                >
+                  Choose File
+                  <input
+                    id="technology-document-upload"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    hidden
+                    {...register("techExitDeclaration.technologyDocument", {
+                      required: "A supporting document is required.",
+                      onChange: (event) => {
+                        setFileName(setTechnologyDocumentName, event);
+                      }
+                    })}
+                  />
+                </Button>
+                <Typography aria-live="polite" sx={{ overflow: "hidden", px: 1.25, color: "#344457", fontSize: 11, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {technologyDocumentName || "No file chosen"}
+                </Typography>
+              </Box>
+              {errors?.techExitDeclaration?.technologyDocument && (
+                <FormHelperText sx={{ mt: 0.5, ml: 0.5 }}>{errors.techExitDeclaration.technologyDocument.message}</FormHelperText>
+              )}
+            </FormControl>
           </Box>
         </Box>
       </Paper>
@@ -125,7 +149,16 @@ function TechExitDeclarationStep() {
               minRows={3}
               placeholder="Describe exit protocol (minimum 250 words)"
               sx={inputSx}
-              {...register("techExitDeclaration.exitProtocol")}
+              error={Boolean(errors?.techExitDeclaration?.exitProtocol)}
+              helperText={errors?.techExitDeclaration?.exitProtocol?.message}
+              {...register("techExitDeclaration.exitProtocol", {
+                required: "Description is required.",
+                validate: (value) => {
+                  const trimmedValue = value?.trim?.() || "";
+                  if (!trimmedValue) return "Description is required.";
+                  return trimmedValue.split(/\s+/).filter(Boolean).length >= 250 || "Description must be at least 250 words.";
+                }
+              })}
             />
           </Box>
 
@@ -133,29 +166,35 @@ function TechExitDeclarationStep() {
             <Typography component="label" sx={uploadTitleSx}>
               UPLOAD SUPPORTING DOCUMENT <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
-            <Box sx={{ display: "flex", minHeight: 34, alignItems: "center", overflow: "hidden", border: "1px solid #cfd7e2", borderRadius: 1, bgcolor: "#fff" }}>
-              <Button
-                component="label"
-                htmlFor="exit-protocol-document-upload"
-                sx={{ height: 34, px: 1.5, borderRight: "1px solid #cfd7e2", borderRadius: 0, color: "#132e4c", bgcolor: "#f1f4f8", fontSize: 11, textTransform: "none", whiteSpace: "nowrap" }}
-              >
-                Choose File
-                <input
-                  id="exit-protocol-document-upload"
-                  type="file"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  hidden
-                  {...register("techExitDeclaration.exitProtocolDocument", {
-                    onChange: (event) => {
-                      setExitProtocolDocumentName(event.target.files?.[0]?.name || "");
-                    }
-                  })}
-                />
-              </Button>
-              <Typography aria-live="polite" sx={{ overflow: "hidden", px: 1.25, color: "#344457", fontSize: 11, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {exitProtocolDocumentName || "No file chosen"}
-              </Typography>
-            </Box>
+            <FormControl fullWidth error={Boolean(errors?.techExitDeclaration?.exitProtocolDocument)}>
+              <Box sx={{ display: "flex", minHeight: 34, alignItems: "center", overflow: "hidden", border: "1px solid #cfd7e2", borderRadius: 1, bgcolor: "#fff" }}>
+                <Button
+                  component="label"
+                  htmlFor="exit-protocol-document-upload"
+                  sx={{ height: 34, px: 1.5, borderRight: "1px solid #cfd7e2", borderRadius: 0, color: "#132e4c", bgcolor: "#f1f4f8", fontSize: 11, textTransform: "none", whiteSpace: "nowrap" }}
+                >
+                  Choose File
+                  <input
+                    id="exit-protocol-document-upload"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    hidden
+                    {...register("techExitDeclaration.exitProtocolDocument", {
+                      required: "A supporting document is required.",
+                      onChange: (event) => {
+                        setFileName(setExitProtocolDocumentName, event);
+                      }
+                    })}
+                  />
+                </Button>
+                <Typography aria-live="polite" sx={{ overflow: "hidden", px: 1.25, color: "#344457", fontSize: 11, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {exitProtocolDocumentName || "No file chosen"}
+                </Typography>
+              </Box>
+              {errors?.techExitDeclaration?.exitProtocolDocument && (
+                <FormHelperText sx={{ mt: 0.5, ml: 0.5 }}>{errors.techExitDeclaration.exitProtocolDocument.message}</FormHelperText>
+              )}
+            </FormControl>
           </Box>
         </Box>
       </Paper>
@@ -170,66 +209,76 @@ function TechExitDeclarationStep() {
             <Typography sx={formLabelSx}>
               15.1 DECLARATION <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
-            <Box sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", px: 1.25, py: 0.75 }}>
-              <FormControlLabel
-                sx={{ alignItems: "flex-start", width: "100%", m: 0 }}
-                control={
-                  <Checkbox
-                    size="small"
-                    sx={{ mt: 0.1, color: "#808080", "&.Mui-checked": { color: "#0b6037" } }}
-                    {...register("techExitDeclaration.declaration1")}
-                  />
-                }
-                label={
-                  <Typography sx={{ mt: 1.5, fontSize: 12, lineHeight: 1.5, color: "#244056" }}>
-                    The Programme Division (PD) will ensure that the implementing Agency (IA) shall adhere to provision of GFR 2017 and Government Accounting Rules 1990.
-                  </Typography>
-                }
-              />
-            </Box>
+            <FormControl error={Boolean(errors?.techExitDeclaration?.declaration1)}>
+              <Box sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", px: 1.25, py: 0.75 }}>
+                <FormControlLabel
+                  sx={{ alignItems: "flex-start", width: "100%", m: 0 }}
+                  control={
+                    <Checkbox
+                      size="small"
+                      sx={{ mt: 0.1, color: "#808080", "&.Mui-checked": { color: "#0b6037" } }}
+                      {...register("techExitDeclaration.declaration1", { required: "This declaration is required." })}
+                    />
+                  }
+                  label={
+                    <Typography sx={{ mt: 1.5, fontSize: 12, lineHeight: 1.5, color: "#244056" }}>
+                      The Programme Division (PD) will ensure that the implementing Agency (IA) shall adhere to provision of GFR 2017 and Government Accounting Rules 1990.
+                    </Typography>
+                  }
+                />
+              </Box>
+              {errors?.techExitDeclaration?.declaration1 && (
+                <FormHelperText sx={{ mt: 0.5 }}>{errors.techExitDeclaration.declaration1.message}</FormHelperText>
+              )}
+            </FormControl>
           </Box>
 
           <Box>
             <Typography sx={{ ...formLabelSx, mt: 2 }}>
               15.2 DECLARATION <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
-            <Box sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", px: 1.25, py: 0.75 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "space-between" }}>
-                <FormControlLabel
-                  sx={{ alignItems: "flex-start", flex: 1, m: 0 }}
-                  control={
-                    <Checkbox
-                      size="small"
-                      sx={{ mt: 0.1, color: "#808080", "&.Mui-checked": { color: "#0b6037" } }}
-                      {...register("techExitDeclaration.declaration2")}
-                    />
-                  }
-                  label={
-                    <Typography sx={{ mt: 1.5, fontSize: 12, lineHeight: 1.5, color: "#244056" }}>
-                      The Implementing Agency (IA) is required to comply with the provisions as stated in the OM no. NA-13/13/2022-NA dated 29.12.2022 issued by the National Authority.
-                    </Typography>
-                  }
-                />
-                <IconButton
-                  component="a"
-                  href={revisedGuidelinesPdf}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Open revised guidelines PDF"
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    border: "1px solid #e3b45d",
-                    borderRadius: 1,
-                    bgcolor: "#fff7dc",
-                    color: "#9a6700",
-                    '&:hover': { bgcolor: "#fdf1c4" }
-                  }}
-                >
-                  <FileText size={14} />
-                </IconButton>
+            <FormControl error={Boolean(errors?.techExitDeclaration?.declaration2)}>
+              <Box sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", px: 1.25, py: 0.75 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "space-between" }}>
+                  <FormControlLabel
+                    sx={{ alignItems: "flex-start", flex: 1, m: 0 }}
+                    control={
+                      <Checkbox
+                        size="small"
+                        sx={{ mt: 0.1, color: "#808080", "&.Mui-checked": { color: "#0b6037" } }}
+                        {...register("techExitDeclaration.declaration2", { required: "This declaration is required." })}
+                      />
+                    }
+                    label={
+                      <Typography sx={{ mt: 1.5, fontSize: 12, lineHeight: 1.5, color: "#244056" }}>
+                        The Implementing Agency (IA) is required to comply with the provisions as stated in the OM no. NA-13/13/2022-NA dated 29.12.2022 issued by the National Authority.
+                      </Typography>
+                    }
+                  />
+                  <IconButton
+                    component="a"
+                    href={revisedGuidelinesPdf}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Open revised guidelines PDF"
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      border: "1px solid #e3b45d",
+                      borderRadius: 1,
+                      bgcolor: "#fff7dc",
+                      color: "#9a6700",
+                      '&:hover': { bgcolor: "#fdf1c4" }
+                    }}
+                  >
+                    <FileText size={14} />
+                  </IconButton>
+                </Box>
               </Box>
-            </Box>
+              {errors?.techExitDeclaration?.declaration2 && (
+                <FormHelperText sx={{ mt: 0.5 }}>{errors.techExitDeclaration.declaration2.message}</FormHelperText>
+              )}
+            </FormControl>
           </Box>
         </Box>
       </Paper>

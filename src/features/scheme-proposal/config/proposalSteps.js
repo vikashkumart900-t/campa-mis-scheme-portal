@@ -40,7 +40,18 @@ export const proposalSteps = [
     label: "Documents & Employment",
     fields: ["documentsEmployment.imageDescription", "documentsEmployment.imageFiles"]
   },
-  { id: "techExitDeclaration", label: "Tech, Exit & Declaration", fields: [] },
+  {
+    id: "techExitDeclaration",
+    label: "Tech, Exit & Declaration",
+    fields: [
+      "techExitDeclaration.technologyIntervention",
+      "techExitDeclaration.technologyDocument",
+      "techExitDeclaration.exitProtocol",
+      "techExitDeclaration.exitProtocolDocument",
+      "techExitDeclaration.declaration1",
+      "techExitDeclaration.declaration2"
+    ]
+  },
   { id: "installment", label: "Installment", fields: [] },
   { id: "reviewSubmission", label: "Review & Final Submission", fields: [] }
 ];
