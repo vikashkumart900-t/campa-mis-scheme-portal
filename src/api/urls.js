@@ -6,6 +6,7 @@ export const apiUrls = {
   schemeDetails: (schemeId) => `${campaApiBaseUrl}/${encodeURIComponent(schemeId)}/details`,
   roles: `${campaApiBaseUrl}/getAllRoles`,
   programDivisionOrganizations: `${campaApiBaseUrl}/program-division-organizations`,
+  states: `${campaApiBaseUrl}/states`,
   registrationDropdownMetadata: `${campaApiBaseUrl}/dropdown-metadata`,
   registrationDistricts: (stateCode) => `${campaApiBaseUrl}/districts/${encodeURIComponent(stateCode)}`,
   register: `${campaApiBaseUrl}/register`,

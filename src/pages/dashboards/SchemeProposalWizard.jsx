@@ -85,6 +85,9 @@ function SchemeProposalWizard() {
       },
       schemeName: "",
       organizationName: "",
+      stateDistrictSelections: [
+        { stateCode: "", stateName: "", districtIds: [], districtCodes: [], districtNames: [] }
+      ],
       officerName: "",
       designation: "",
       email: "",
@@ -263,7 +266,13 @@ function SchemeProposalWizard() {
           expectedCompletionDate: values.expectedCompletionDate,
           organizationId: schemeSubmissionIds.organizationId,
           divisionId: schemeSubmissionIds.divisionId,
-          schemeId: schemeSubmissionIds.schemeId
+          schemeId: schemeSubmissionIds.schemeId,
+          stateDistricts: (values.stateDistrictSelections || [])
+            .filter((selection) => selection?.stateCode)
+            .map((selection) => ({
+              stateCode: String(selection.stateCode),
+              districtCodes: (selection.districtCodes || []).map(String)
+            }))
         };
         const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
         const response = await fetch(apiUrls.nodalOfficer, {
