@@ -666,6 +666,8 @@ function DeliverablesStep() {
                         sx={inputSx}
                         slotProps={{ htmlInput: { min: 0, step: "any" } }}
                         {...register(`deliverables.yearWiseExpenditures.${index}.expenditure`, {
+                          required: "Expenditure is required.",
+                          valueAsNumber: true,
                           min: { value: 0, message: "Expenditure cannot be negative." }
                         })}
                       />

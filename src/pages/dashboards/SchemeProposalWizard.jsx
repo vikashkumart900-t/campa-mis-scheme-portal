@@ -117,6 +117,8 @@ function SchemeProposalWizard() {
   const [basicInfoError, setBasicInfoError] = useState("");
   const [savingObjectivesFunding, setSavingObjectivesFunding] = useState(false);
   const [objectivesFundingError, setObjectivesFundingError] = useState("");
+  const [savingDeliverables, setSavingDeliverables] = useState(false);
+  const [deliverablesError, setDeliverablesError] = useState("");
   const [loadedSchemeId, setLoadedSchemeId] = useState(null);
   const [schemeSubmissionIds, setSchemeSubmissionIds] = useState(null);
   const [schemeNameError, setSchemeNameError] = useState("");
@@ -202,11 +204,15 @@ function SchemeProposalWizard() {
       const internationalFields = (deliverables.internationalFootprints || []).map(
         (_, index) => `deliverables.internationalFootprints.${index}.description`
       );
+      const yearlyExpenditureFields = deliverables.expenditureType === "yearWise"
+        ? (deliverables.yearWiseExpenditures || []).map((_, index) => `deliverables.yearWiseExpenditures.${index}.expenditure`)
+        : [];
       return trigger([
         "deliverables.expenditureType",
         ...itemFields,
         ...nationalFields,
-        ...internationalFields
+        ...internationalFields,
+        ...yearlyExpenditureFields
       ]);
     }
 
@@ -266,7 +272,7 @@ function SchemeProposalWizard() {
   };
 
   const goToNextStep = async () => {
-    if (activeStep === 0 || proposalSteps[activeStep].id === "objectivesFunding") {
+    if (activeStep === 0 || ["objectivesFunding", "deliverables"].includes(proposalSteps[activeStep].id)) {
       await saveAndGoToNextStep();
       return;
     }
@@ -406,6 +412,67 @@ function SchemeProposalWizard() {
       } finally {
         setSavingObjectivesFunding(false);
       }
+    } else if (proposalSteps[activeStep].id === "deliverables") {
+      setSavingDeliverables(true);
+      setDeliverablesError("");
+      try {
+        const values = getValues().deliverables || {};
+        const selectedSchemeId = Number(schemeId);
+        if (!Number.isSafeInteger(selectedSchemeId) || selectedSchemeId <= 0) {
+          throw new Error("The selected scheme is missing a valid scheme ID.");
+        }
+        const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+        if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+          throw new Error("Your session is missing an access token. Please sign in again.");
+        }
+        const expenditureType = values.expenditureType === "activityWise" ? "ACTIVITY_WISE" : "YEAR_WISE";
+        const payload = {
+          expenditureType,
+          deliverables: (values.items || []).map((item) => ({
+            id: item.id ?? null,
+            deliverable: item.description.trim(),
+            unit: item.unit.trim(),
+            initiationDate: item.initiationDate,
+            closingDate: item.closingDate,
+            financialOutlay: Number(item.financialOutlay),
+            remarks: (item.remarks || "").trim()
+          })),
+          yearlyExpenditures: expenditureType === "YEAR_WISE"
+            ? (values.yearWiseExpenditures || []).map((row) => ({
+              financialYear: row.financialYear,
+              expenditure: Number(row.expenditure)
+            }))
+            : [],
+          nationalImportance: (values.nationalImportance || []).map((item) => item.description.trim()),
+          internationalFootprints: (values.internationalFootprints || []).map((item) => item.description.trim())
+        };
+        const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+        const response = await fetch(apiUrls.misDeliverables(selectedSchemeId), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: authorization
+          },
+          body: JSON.stringify(payload)
+        });
+        const responseText = await response.text();
+        let result;
+        if (responseText) {
+          try {
+            result = JSON.parse(responseText);
+          } catch {
+            result = { message: responseText };
+          }
+        }
+        if (!response.ok || result?.success === false) {
+          throw new Error(result?.message || result?.error || `Request failed with status ${response.status}`);
+        }
+      } catch (error) {
+        setDeliverablesError(`Unable to save deliverables: ${error.message}`);
+        return;
+      } finally {
+        setSavingDeliverables(false);
+      }
     }
 
     setSavedStepIndex(activeStep);
@@ -519,6 +586,7 @@ function SchemeProposalWizard() {
           onChange={() => {
             setSavedStepIndex(null);
             setObjectivesFundingError("");
+            setDeliverablesError("");
           }}
           onSubmit={saveAndGoToNextStep}
         >
@@ -527,11 +595,18 @@ function SchemeProposalWizard() {
               {objectivesFundingError}
             </Typography>
           )}
+          {deliverablesError && activeStep === proposalSteps.findIndex((step) => step.id === "deliverables") && (
+            <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>
+              {deliverablesError}
+            </Typography>
+          )}
           <ActiveStepForm />
           {savedStepIndex !== null && activeStep === savedStepIndex + 1 && (
             <Typography role="status" sx={{ mt: 1, color: "#087638", fontSize: 12 }}>
               {proposalSteps[savedStepIndex].id === "objectivesFunding"
                 ? "Objectives & Funding has been saved."
+                : proposalSteps[savedStepIndex].id === "deliverables"
+                  ? "Deliverables have been saved."
                 : `${proposalSteps[savedStepIndex].label} is retained while this wizard is open. Draft saving to the server is not connected yet.`}
             </Typography>
           )}
@@ -539,7 +614,7 @@ function SchemeProposalWizard() {
             <Button
               type="button"
               variant="outlined"
-              disabled={savingObjectivesFunding}
+              disabled={savingObjectivesFunding || savingDeliverables}
               onClick={() => {
                 setSavedStepIndex(null);
                 setActiveStep((currentStep) => currentStep - 1);
@@ -556,11 +631,11 @@ function SchemeProposalWizard() {
                   </Button>
                 ) : (
                   <>
-                    <Button type="button" variant="outlined" disabled={savingObjectivesFunding} onClick={goToNextStep} sx={{ textTransform: "none" }}>
-                      {savingObjectivesFunding ? "Saving..." : "Next"}
+                    <Button type="button" variant="outlined" disabled={savingObjectivesFunding || savingDeliverables} onClick={goToNextStep} sx={{ textTransform: "none" }}>
+                      {savingObjectivesFunding || savingDeliverables ? "Saving..." : "Next"}
                     </Button>
-                    <Button type="submit" variant="contained" disabled={savingObjectivesFunding} sx={{ textTransform: "none" }}>
-                      {savingObjectivesFunding ? "Saving..." : "Save & Next"}
+                    <Button type="submit" variant="contained" disabled={savingObjectivesFunding || savingDeliverables} sx={{ textTransform: "none" }}>
+                      {savingObjectivesFunding || savingDeliverables ? "Saving..." : "Save & Next"}
                     </Button>
                   </>
                 )}
