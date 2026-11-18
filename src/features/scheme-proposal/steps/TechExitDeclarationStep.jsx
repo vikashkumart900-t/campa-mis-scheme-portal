@@ -69,13 +69,13 @@ function TechExitDeclarationStep() {
     <>
       <Paper elevation={0} sx={sectionSx}>
         <Typography component="h1" sx={titleSx}>
-          13. Technological Intervention in implementing the scheme
+          12. Technological Intervention in implementing the scheme
         </Typography>
 
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 370px" }, gap: 2, alignItems: "end" }}>
           <Box>
             <Typography component="label" sx={{ ...uploadTitleSx, color: "#132e4c" }}>
-              13.1 DESCRIPTION OF TECHNOLOGICAL INTERVENTION IN IMPLEMENTING THE SCHEME <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+              12.1 DESCRIPTION OF TECHNOLOGICAL INTERVENTION IN IMPLEMENTING THE SCHEME <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
             <TextField
               fullWidth
@@ -135,13 +135,13 @@ function TechExitDeclarationStep() {
 
       <Paper elevation={0} sx={sectionSx}>
         <Typography component="h2" sx={titleSx}>
-          14. Exit protocol of the scheme
+          13. Exit protocol of the scheme
         </Typography>
 
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 370px" }, gap: 2, alignItems: "end" }}>
           <Box>
             <Typography component="label" sx={{ ...uploadTitleSx, color: "#132e4c" }}>
-              14.1 DESCRIPTION OF EXIT PROTOCOL OF THE SCHEME <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+              13.1 DESCRIPTION OF EXIT PROTOCOL OF THE SCHEME <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
             <TextField
               fullWidth
@@ -201,13 +201,13 @@ function TechExitDeclarationStep() {
 
       <Paper elevation={0} sx={sectionSx}>
         <Typography component="h2" sx={{ ...titleSx, mb: 1.5 }}>
-          15. Declaration
+          14. Declaration
         </Typography>
 
         <Box sx={{ display: "grid", gap: 1.25 }}>
           <Box>
             <Typography sx={formLabelSx}>
-              15.1 DECLARATION <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+              14.1 DECLARATION <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
             <FormControl error={Boolean(errors?.techExitDeclaration?.declaration1)}>
               <Box sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", px: 1.25, py: 0.75 }}>
@@ -235,7 +235,7 @@ function TechExitDeclarationStep() {
 
           <Box>
             <Typography sx={{ ...formLabelSx, mt: 2 }}>
-              15.2 DECLARATION <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+              14.2 DECLARATION <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </Typography>
             <FormControl error={Boolean(errors?.techExitDeclaration?.declaration2)}>
               <Box sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", px: 1.25, py: 0.75 }}>

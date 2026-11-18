@@ -171,13 +171,13 @@ function DocumentsEmploymentStep() {
 
       <Paper elevation={0} sx={sectionSx}>
         <Typography component="h2" sx={sectionTitleSx}>
-          11. Scheme supporting documents
+          10. Scheme supporting documents
         </Typography>
 
         <Paper elevation={0} sx={{ mb: 1.25, p: 1.5, border: "1px solid #e0e4ea", borderRadius: 1.5, bgcolor: "#fff" }}>
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1 }}>
             <Typography component="h3" sx={subSectionTitleSx}>
-              11.1 Upload KML files for scheme footprints <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+              10.1 Upload KML files for scheme footprints <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
               <Info size={12} color="#0785c2" title="KML or KMZ files, up to 20 MB each" />
             </Typography>
             <Box sx={{ display: "flex", gap: 0.5 }}>
@@ -266,7 +266,7 @@ function DocumentsEmploymentStep() {
 
         <Paper elevation={0} sx={{ p: 1.5, border: "1px solid #e0e4ea", borderRadius: 1.5, bgcolor: "#fff" }}>
           <Typography component="h3" sx={{ ...subSectionTitleSx, mb: 1 }}>
-            11.2 Image Gallery <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+            10.2 Image Gallery <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             <Info size={12} color="#0785c2" title="JPG, JPEG, or PNG images, up to 2 MB each" />
           </Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.3fr 1fr 0.8fr" }, gap: 1.25, px: 0.25, pb: 0.5 }}>
@@ -314,7 +314,7 @@ function DocumentsEmploymentStep() {
 
       <Paper elevation={0} sx={sectionSx}>
         <Typography component="h2" sx={sectionTitleSx}>
-          12. Projected Green Employment / Employment Generation <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+          11. Projected Green Employment / Employment Generation <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
         </Typography>
         <Box sx={{ maxWidth: { xs: "100%", md: "33%" }, mb: 1 }}>
           <Typography component="label" htmlFor="employmentFinancialYear" sx={fieldLabelSx}>Select financial year</Typography>

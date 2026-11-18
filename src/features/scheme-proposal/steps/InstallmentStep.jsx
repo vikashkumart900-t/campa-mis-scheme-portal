@@ -18,7 +18,6 @@ import { useFieldArray, useFormContext } from "react-hook-form";
 import { proposalSteps } from "../config/proposalSteps";
 import { getFinancialYears } from "../utils/financialYears";
 
-const step = proposalSteps[6];
 const sectionSx = {
   p: { xs: 2, md: 2.5 },
   border: "1px solid #e0e4ea",
@@ -140,7 +139,7 @@ function InstallmentStep() {
           <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#1b8d63" }} />
         </Box>
         <Typography component="h1" sx={{ fontSize: 14, fontWeight: 700, color: "#132e4c", lineHeight: 1.2 }}>
-          {step.label} Report
+          Installment Report
         </Typography>
       </Box>
 
