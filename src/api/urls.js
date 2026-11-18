@@ -12,6 +12,7 @@ export const apiUrls = {
   registrationDistricts: (stateCode) => `${campaApiBaseUrl}/districts/${encodeURIComponent(stateCode)}`,
   misObjectives: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/objective-details`,
   misDeliverables: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/deliverables`,
+  misEvaluationResearch: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/evaluation-research`,
   register: `${campaApiBaseUrl}/register`,
   forgotPassword: `${campaApiBaseUrl}/forgot-password`,
   verifyResetOtp: `${campaApiBaseUrl}/verify-reset-otp`,

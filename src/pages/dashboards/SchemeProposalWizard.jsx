@@ -119,6 +119,8 @@ function SchemeProposalWizard() {
   const [objectivesFundingError, setObjectivesFundingError] = useState("");
   const [savingDeliverables, setSavingDeliverables] = useState(false);
   const [deliverablesError, setDeliverablesError] = useState("");
+  const [savingEvaluationResearch, setSavingEvaluationResearch] = useState(false);
+  const [evaluationResearchError, setEvaluationResearchError] = useState("");
   const [loadedSchemeId, setLoadedSchemeId] = useState(null);
   const [schemeSubmissionIds, setSchemeSubmissionIds] = useState(null);
   const [schemeNameError, setSchemeNameError] = useState("");
@@ -272,7 +274,7 @@ function SchemeProposalWizard() {
   };
 
   const goToNextStep = async () => {
-    if (activeStep === 0 || ["objectivesFunding", "deliverables"].includes(proposalSteps[activeStep].id)) {
+    if (activeStep === 0 || ["objectivesFunding", "deliverables", "evaluationResearch"].includes(proposalSteps[activeStep].id)) {
       await saveAndGoToNextStep();
       return;
     }
@@ -473,6 +475,79 @@ function SchemeProposalWizard() {
       } finally {
         setSavingDeliverables(false);
       }
+    } else if (proposalSteps[activeStep].id === "evaluationResearch") {
+      setSavingEvaluationResearch(true);
+      setEvaluationResearchError("");
+      try {
+        const values = getValues().evaluationResearch || {};
+        const selectedSchemeId = Number(schemeId);
+        if (!Number.isSafeInteger(selectedSchemeId) || selectedSchemeId <= 0) {
+          throw new Error("The selected scheme is missing a valid scheme ID.");
+        }
+        const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+        if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+          throw new Error("Your session is missing an access token. Please sign in again.");
+        }
+
+        let evaluationType;
+        let selectedRows = [];
+        if (values.monitoringAnnually === "yes") {
+          evaluationType = "ANNUAL";
+          selectedRows = values.monitoringAnnuallyItems || [];
+        } else if (values.midtermEvaluation === "yes") {
+          evaluationType = "MIDTERM";
+          selectedRows = values.midtermEvaluationItems || [];
+        } else {
+          throw new Error("Select an evaluation commitment.");
+        }
+
+        const evaluationDetails = selectedRows
+          .map((row) => (row.details || "").trim())
+          .filter(Boolean);
+        const supportingDocument = selectedRows[0]?.attachment?.[0];
+        if (!evaluationDetails.length) {
+          throw new Error("Enter at least one evaluation detail.");
+        }
+        if (!supportingDocument) {
+          throw new Error("Upload a supporting document.");
+        }
+
+        const payload = {
+          evaluationType,
+          evaluationDetails,
+          researchAspects: (values.researchAspects || "").trim(),
+          uniqueHighlights: (values.researchHighlights || "").trim()
+        };
+        const formData = new FormData();
+        formData.append("request", JSON.stringify(payload));
+        formData.append("file", supportingDocument);
+
+        const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+        const response = await fetch(apiUrls.misEvaluationResearch(selectedSchemeId), {
+          method: "POST",
+          headers: {
+            Authorization: authorization
+          },
+          body: formData
+        });
+        const responseText = await response.text();
+        let result;
+        if (responseText) {
+          try {
+            result = JSON.parse(responseText);
+          } catch {
+            result = { message: responseText };
+          }
+        }
+        if (!response.ok || result?.success === false) {
+          throw new Error(result?.message || result?.error || `Request failed with status ${response.status}`);
+        }
+      } catch (error) {
+        setEvaluationResearchError(`Unable to save evaluation and research: ${error.message}`);
+        return;
+      } finally {
+        setSavingEvaluationResearch(false);
+      }
     }
 
     setSavedStepIndex(activeStep);
@@ -587,6 +662,7 @@ function SchemeProposalWizard() {
             setSavedStepIndex(null);
             setObjectivesFundingError("");
             setDeliverablesError("");
+            setEvaluationResearchError("");
           }}
           onSubmit={saveAndGoToNextStep}
         >
@@ -600,6 +676,11 @@ function SchemeProposalWizard() {
               {deliverablesError}
             </Typography>
           )}
+          {evaluationResearchError && activeStep === proposalSteps.findIndex((step) => step.id === "evaluationResearch") && (
+            <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>
+              {evaluationResearchError}
+            </Typography>
+          )}
           <ActiveStepForm />
           {savedStepIndex !== null && activeStep === savedStepIndex + 1 && (
             <Typography role="status" sx={{ mt: 1, color: "#087638", fontSize: 12 }}>
@@ -607,6 +688,8 @@ function SchemeProposalWizard() {
                 ? "Objectives & Funding has been saved."
                 : proposalSteps[savedStepIndex].id === "deliverables"
                   ? "Deliverables have been saved."
+                  : proposalSteps[savedStepIndex].id === "evaluationResearch"
+                    ? "Evaluation & Research has been saved."
                 : `${proposalSteps[savedStepIndex].label} is retained while this wizard is open. Draft saving to the server is not connected yet.`}
             </Typography>
           )}
@@ -614,7 +697,7 @@ function SchemeProposalWizard() {
             <Button
               type="button"
               variant="outlined"
-              disabled={savingObjectivesFunding || savingDeliverables}
+              disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch}
               onClick={() => {
                 setSavedStepIndex(null);
                 setActiveStep((currentStep) => currentStep - 1);
@@ -631,11 +714,11 @@ function SchemeProposalWizard() {
                   </Button>
                 ) : (
                   <>
-                    <Button type="button" variant="outlined" disabled={savingObjectivesFunding || savingDeliverables} onClick={goToNextStep} sx={{ textTransform: "none" }}>
-                      {savingObjectivesFunding || savingDeliverables ? "Saving..." : "Next"}
+                    <Button type="button" variant="outlined" disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch} onClick={goToNextStep} sx={{ textTransform: "none" }}>
+                      {savingObjectivesFunding || savingDeliverables || savingEvaluationResearch ? "Saving..." : "Next"}
                     </Button>
-                    <Button type="submit" variant="contained" disabled={savingObjectivesFunding || savingDeliverables} sx={{ textTransform: "none" }}>
-                      {savingObjectivesFunding || savingDeliverables ? "Saving..." : "Save & Next"}
+                    <Button type="submit" variant="contained" disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch} sx={{ textTransform: "none" }}>
+                      {savingObjectivesFunding || savingDeliverables || savingEvaluationResearch ? "Saving..." : "Save & Next"}
                     </Button>
                   </>
                 )}
