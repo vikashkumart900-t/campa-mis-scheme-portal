@@ -22,7 +22,9 @@ export const proposalSteps = [
     fields: [
       "objectivesFunding.hasStateComponents",
       "objectivesFunding.stateBoardAgreement",
-      "objectivesFunding.hasOtherFundingAgency"
+      "objectivesFunding.hasOtherFundingAgency",
+      "objectivesFunding.stateAgreementDocument",
+      "objectivesFunding.otherFundingAgencyDocument"
     ]
   },
   { id: "deliverables", label: "Deliverables", fields: [] },

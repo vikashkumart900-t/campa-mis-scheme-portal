@@ -194,7 +194,7 @@ function ObjectiveRow({ index, field, control, register, errors, onRemove }) {
   );
 }
 
-function SupportingDocumentUpload({ id, name, register, fileName }) {
+function SupportingDocumentUpload({ id, name, register, fileName, error }) {
   return (
     <Box>
       <Typography
@@ -236,7 +236,7 @@ function SupportingDocumentUpload({ id, name, register, fileName }) {
             type="file"
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
             hidden
-            {...register(name)}
+            {...register(name, { required: "Choose a supporting document." })}
           />
         </Button>
         <Typography
@@ -246,6 +246,7 @@ function SupportingDocumentUpload({ id, name, register, fileName }) {
           {fileName || "No file chosen"}
         </Typography>
       </Box>
+      {error?.message && <FormHelperText error>{error.message}</FormHelperText>}
     </Box>
   );
 }
@@ -517,14 +518,14 @@ function ObjectivesFundingStep() {
             {stateComponentsError?.message && <FormHelperText>{stateComponentsError.message}</FormHelperText>}
           </FormControl>
 
-          {hasStateComponents === "yes" && (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                gap: 1.5
-              }}
-            >
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: 1.5
+            }}
+          >
+            {hasStateComponents === "yes" && (
               <FormControl component="fieldset" error={Boolean(stateBoardAgreementError)}>
                 <FormLabel
                   component="legend"
@@ -565,14 +566,15 @@ function ObjectivesFundingStep() {
                   <FormHelperText>{stateBoardAgreementError.message}</FormHelperText>
                 )}
               </FormControl>
-              <SupportingDocumentUpload
-                id="state-agreement-document"
-                name="objectivesFunding.stateAgreementDocument"
-                register={register}
-                fileName={stateAgreementDocument?.[0]?.name}
-              />
-            </Box>
-          )}
+            )}
+            <SupportingDocumentUpload
+              id="state-agreement-document"
+              name="objectivesFunding.stateAgreementDocument"
+              register={register}
+              fileName={stateAgreementDocument?.[0]?.name}
+              error={errors?.objectivesFunding?.stateAgreementDocument}
+            />
+          </Box>
 
           <FormControl component="fieldset" error={Boolean(fundingAgencyError)}>
             <FormLabel
@@ -598,15 +600,15 @@ function ObjectivesFundingStep() {
             {fundingAgencyError?.message && <FormHelperText>{fundingAgencyError.message}</FormHelperText>}
           </FormControl>
 
-          {hasOtherFundingAgency === "yes" && (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                alignItems: "end",
-                gap: 1.5
-              }}
-            >
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              alignItems: "end",
+              gap: 1.5
+            }}
+          >
+            {hasOtherFundingAgency === "yes" && (
               <Box>
                 <FormLabel
                   component="label"
@@ -624,14 +626,15 @@ function ObjectivesFundingStep() {
                   {...register("objectivesFunding.otherFundingSources")}
                 />
               </Box>
-              <SupportingDocumentUpload
-                id="other-funding-agency-document"
-                name="objectivesFunding.otherFundingAgencyDocument"
-                register={register}
-                fileName={otherFundingAgencyDocument?.[0]?.name}
-              />
-            </Box>
-          )}
+            )}
+            <SupportingDocumentUpload
+              id="other-funding-agency-document"
+              name="objectivesFunding.otherFundingAgencyDocument"
+              register={register}
+              fileName={otherFundingAgencyDocument?.[0]?.name}
+              error={errors?.objectivesFunding?.otherFundingAgencyDocument}
+            />
+          </Box>
         </Box>
       </Paper>
     </>

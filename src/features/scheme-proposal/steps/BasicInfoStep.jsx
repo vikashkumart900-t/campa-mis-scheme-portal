@@ -321,14 +321,14 @@ function BasicInfoStep() {
           2. Nodal Officer Details
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-          <FormField id="organizationName" label="2.1 Name of Implementing Agency">
+          <FormField id="organizationName" label="2.1 Name of Implementing Agency" required>
             <TextField 
               id="organizationName" 
               fullWidth 
               size="small" 
               sx={readOnlyInputSx}
               slotProps={{ htmlInput: { readOnly: true } }}
-              {...getFieldProps("organizationName")} 
+              {...getFieldProps("organizationName", { required: "Implementing agency is required." })}
             />
           </FormField>
           <FormField id="officerName" label="2.2 Name of the Nodal Officer of Implementing Agency">

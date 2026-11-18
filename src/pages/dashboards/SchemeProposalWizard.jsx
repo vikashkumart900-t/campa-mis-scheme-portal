@@ -115,6 +115,8 @@ function SchemeProposalWizard() {
   const ActiveStepForm = activeStep > 0 ? laterStepComponents[activeStep - 1] : null;
   const [savingBasicInfo, setSavingBasicInfo] = useState(false);
   const [basicInfoError, setBasicInfoError] = useState("");
+  const [savingObjectivesFunding, setSavingObjectivesFunding] = useState(false);
+  const [objectivesFundingError, setObjectivesFundingError] = useState("");
   const [loadedSchemeId, setLoadedSchemeId] = useState(null);
   const [schemeSubmissionIds, setSchemeSubmissionIds] = useState(null);
   const [schemeNameError, setSchemeNameError] = useState("");
@@ -264,7 +266,7 @@ function SchemeProposalWizard() {
   };
 
   const goToNextStep = async () => {
-    if (activeStep === 0) {
+    if (activeStep === 0 || proposalSteps[activeStep].id === "objectivesFunding") {
       await saveAndGoToNextStep();
       return;
     }
@@ -336,6 +338,73 @@ function SchemeProposalWizard() {
         return;
       } finally {
         setSavingBasicInfo(false);
+      }
+    } else if (proposalSteps[activeStep].id === "objectivesFunding") {
+      setSavingObjectivesFunding(true);
+      setObjectivesFundingError("");
+      try {
+        const values = getValues().objectivesFunding || {};
+        const selectedSchemeId = Number(schemeId);
+        if (!Number.isSafeInteger(selectedSchemeId) || selectedSchemeId <= 0) {
+          throw new Error("The selected scheme is missing a valid scheme ID.");
+        }
+        const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+        if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+          throw new Error("Your session is missing an access token. Please sign in again.");
+        }
+        const stateAgreementFile = values.stateAgreementDocument?.[0];
+        const fundingDocumentFile = values.otherFundingAgencyDocument?.[0];
+        if (!stateAgreementFile || !fundingDocumentFile) {
+          throw new Error("Upload both the state agreement and funding agency documents.");
+        }
+        const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+        const payload = {
+          objectives: {
+            majorObjectives: (values.objectives || []).map((objective) => ({
+              majorObjective: (objective.majorObjective || "").trim(),
+              minorObjectives: (objective.minorObjectives || [])
+                .map((minorObjective) => (minorObjective.minorObjective || "").trim())
+            }))
+          },
+          stateFunding: {
+            hasStateComponents: values.hasStateComponents === "yes",
+            stateOnboard: values.stateBoardAgreement === "yes",
+            stateAgreementFileName: stateAgreementFile.name,
+            stateAgreementFilePath: null,
+            hasOtherFundingAgency: values.hasOtherFundingAgency === "yes",
+            otherFundingSources: (values.otherFundingSources || "").trim(),
+            fundingDocumentFileName: fundingDocumentFile.name,
+            fundingDocumentFilePath: null
+          }
+        };
+        const formData = new FormData();
+        formData.append("request", JSON.stringify(payload));
+        formData.append("stateAgreementFile", stateAgreementFile);
+        formData.append("fundingDocumentFile", fundingDocumentFile);
+        const response = await fetch(apiUrls.misObjectives(selectedSchemeId), {
+          method: "POST",
+          headers: {
+            Authorization: authorization
+          },
+          body: formData
+        });
+        const responseText = await response.text();
+        let result;
+        if (responseText) {
+          try {
+            result = JSON.parse(responseText);
+          } catch {
+            result = { message: responseText };
+          }
+        }
+        if (!response.ok || result?.success === false) {
+          throw new Error(result?.message || result?.error || `Request failed with status ${response.status}`);
+        }
+      } catch (error) {
+        setObjectivesFundingError(`Unable to save objectives and funding: ${error.message}`);
+        return;
+      } finally {
+        setSavingObjectivesFunding(false);
       }
     }
 
@@ -444,17 +513,33 @@ function SchemeProposalWizard() {
           </Box>
       </Box>
       {activeStep > 0 && (
-        <Box component="form" noValidate onChange={() => setSavedStepIndex(null)} onSubmit={saveAndGoToNextStep}>
+        <Box
+          component="form"
+          noValidate
+          onChange={() => {
+            setSavedStepIndex(null);
+            setObjectivesFundingError("");
+          }}
+          onSubmit={saveAndGoToNextStep}
+        >
+          {objectivesFundingError && activeStep === proposalSteps.findIndex((step) => step.id === "objectivesFunding") && (
+            <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>
+              {objectivesFundingError}
+            </Typography>
+          )}
           <ActiveStepForm />
           {savedStepIndex !== null && activeStep === savedStepIndex + 1 && (
             <Typography role="status" sx={{ mt: 1, color: "#087638", fontSize: 12 }}>
-              {proposalSteps[savedStepIndex].label} is retained while this wizard is open. Draft saving to the server is not connected yet.
+              {proposalSteps[savedStepIndex].id === "objectivesFunding"
+                ? "Objectives & Funding has been saved."
+                : `${proposalSteps[savedStepIndex].label} is retained while this wizard is open. Draft saving to the server is not connected yet.`}
             </Typography>
           )}
           <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
             <Button
               type="button"
               variant="outlined"
+              disabled={savingObjectivesFunding}
               onClick={() => {
                 setSavedStepIndex(null);
                 setActiveStep((currentStep) => currentStep - 1);
@@ -471,11 +556,11 @@ function SchemeProposalWizard() {
                   </Button>
                 ) : (
                   <>
-                    <Button type="button" variant="outlined" onClick={goToNextStep} sx={{ textTransform: "none" }}>
-                      Next
+                    <Button type="button" variant="outlined" disabled={savingObjectivesFunding} onClick={goToNextStep} sx={{ textTransform: "none" }}>
+                      {savingObjectivesFunding ? "Saving..." : "Next"}
                     </Button>
-                    <Button type="submit" variant="contained" sx={{ textTransform: "none" }}>
-                      Save & Next
+                    <Button type="submit" variant="contained" disabled={savingObjectivesFunding} sx={{ textTransform: "none" }}>
+                      {savingObjectivesFunding ? "Saving..." : "Save & Next"}
                     </Button>
                   </>
                 )}

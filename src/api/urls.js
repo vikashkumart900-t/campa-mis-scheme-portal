@@ -1,5 +1,6 @@
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(/\/+$/, "");
 const campaApiBaseUrl = `${apiBaseUrl}/campa`;
+const afterLoginBaseUrl = `${apiBaseUrl}/mis`;
 
 export const apiUrls = {
   activeSchemes: `${campaApiBaseUrl}/active-schemes`,
@@ -9,11 +10,12 @@ export const apiUrls = {
   states: `${campaApiBaseUrl}/states`,
   registrationDropdownMetadata: `${campaApiBaseUrl}/dropdown-metadata`,
   registrationDistricts: (stateCode) => `${campaApiBaseUrl}/districts/${encodeURIComponent(stateCode)}`,
+  misObjectives: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/objective-details`,
   register: `${campaApiBaseUrl}/register`,
   forgotPassword: `${campaApiBaseUrl}/forgot-password`,
   verifyResetOtp: `${campaApiBaseUrl}/verify-reset-otp`,
   resetPassword: `${campaApiBaseUrl}/reset-password`,
-  nodalOfficer: `${apiBaseUrl}/mis/nodal-officer`,
+  nodalOfficer: `${afterLoginBaseUrl}/nodal-officer`,
   misLogin: `${campaApiBaseUrl}/mis/login`,
   pariveshLogin: `${campaApiBaseUrl}/parivesh/login`
 };
