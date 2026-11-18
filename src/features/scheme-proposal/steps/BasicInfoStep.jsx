@@ -401,12 +401,12 @@ function BasicInfoStep() {
               {...getFieldProps("expectedCompletionDate", { required: "Expected completion date is required." })}
             />
           </FormField>
-          <FormField id="proposedFinancialOutlay" label="3.3 Proposed Financial Outlay (Rs. in Lakhs)" required>
+          <FormField id="proposedFinancialOutlay" label="3.3 Proposed Financial Outlay (Rs)" required>
             <TextField
               id="proposedFinancialOutlay"
               type="number"
               inputProps={{ min: 0, step: "any" }}
-              placeholder="Enter amount in lakhs"
+              placeholder="Enter amount in rupees"
               fullWidth
               size="small"
               sx={inputSx}

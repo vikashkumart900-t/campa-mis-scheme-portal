@@ -55,7 +55,7 @@ function SchemeProposalWizard() {
             attachment: null
           }
         ],
-        expenditureType: "yearWise",
+        expenditureType: "",
         yearWiseExpenditures: [],
         nationalImportance: [{ description: "" }],
         internationalFootprints: [{ description: "" }]
@@ -83,6 +83,17 @@ function SchemeProposalWizard() {
         exitProtocolDocument: null,
         declaration1: false,
         declaration2: false
+      },
+      installment: {
+        installments: [],
+        bankDetails: {
+          accountName: "",
+          bankName: "",
+          ifscCode: "",
+          branchNameAddress: "",
+          accountNumber: "",
+          confirmAccountNumber: ""
+        }
       },
       schemeName: "",
       organizationName: "",
@@ -221,6 +232,30 @@ function SchemeProposalWizard() {
         ...proposalSteps[activeStep].fields,
         ...kmlFields,
         ...employmentFields
+      ]);
+    }
+
+    if (proposalSteps[activeStep].id === "installment") {
+      const installments = getValues("installment.installments") || [];
+      if (!installments.length) {
+        setError("installment.installments", {
+          type: "required",
+          message: "Enter the proposal and expected completion dates to generate installment years."
+        });
+        return false;
+      }
+      clearErrors("installment.installments");
+      return trigger([
+        ...installments.flatMap((_, index) => [
+          `installment.installments.${index}.duration`,
+          `installment.installments.${index}.amount`
+        ]),
+        "installment.bankDetails.accountName",
+        "installment.bankDetails.bankName",
+        "installment.bankDetails.ifscCode",
+        "installment.bankDetails.branchNameAddress",
+        "installment.bankDetails.accountNumber",
+        "installment.bankDetails.confirmAccountNumber"
       ]);
     }
 
@@ -430,12 +465,20 @@ function SchemeProposalWizard() {
             </Button>
             {activeStep < proposalSteps.length - 1 ? (
               <Box sx={{ display: "flex", gap: 1 }}>
-                <Button type="button" variant="outlined" onClick={goToNextStep} sx={{ textTransform: "none" }}>
-                  Next
-                </Button>
-                <Button type="submit" variant="contained" sx={{ textTransform: "none" }}>
-                  Save & Next
-                </Button>
+                {activeStep === proposalSteps.findIndex((step) => step.id === "installment") ? (
+                  <Button type="submit" variant="contained" sx={{ textTransform: "none" }}>
+                    Proceed to Review &amp; Final Submission
+                  </Button>
+                ) : (
+                  <>
+                    <Button type="button" variant="outlined" onClick={goToNextStep} sx={{ textTransform: "none" }}>
+                      Next
+                    </Button>
+                    <Button type="submit" variant="contained" sx={{ textTransform: "none" }}>
+                      Save & Next
+                    </Button>
+                  </>
+                )}
               </Box>
             ) : (
               <Button type="button" variant="contained" disabled sx={{ textTransform: "none" }}>
