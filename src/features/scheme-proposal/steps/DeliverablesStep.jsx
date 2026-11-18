@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -18,9 +18,10 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { FileSpreadsheet, Plus, Trash2, Upload } from "lucide-react";
+import { FileSpreadsheet, Info, Plus, Trash2, Upload } from "lucide-react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { proposalSteps } from "../config/proposalSteps";
+import { getFinancialYears } from "../utils/financialYears";
 
 const step = proposalSteps[2];
 const sectionSx = {
@@ -84,7 +85,7 @@ function normalizeDate(value, rowNumber, columnName) {
   throw new Error(`Excel row ${rowNumber} has an invalid ${columnName}. Use a date value or DD-MM-YYYY.`);
 }
 
-function parseDeliverablesWorksheet(rows) {
+function parseDeliverablesWorksheet(rows, dateOfProposal, expectedCompletionDate) {
   const headers = rows[0]?.map((value) => String(value ?? "").trim().toLowerCase()) ?? [];
   const columns = {
     description: headers.indexOf("deliverable"),
@@ -113,6 +114,14 @@ function parseDeliverablesWorksheet(rows) {
     if (initiationDate && closingDate && closingDate < initiationDate) {
       throw new Error(`Excel row ${rowNumber} has a closing date before its initiation date.`);
     }
+    for (const [columnName, date] of [["initiation date", initiationDate], ["closing date", closingDate]]) {
+      if (date && dateOfProposal && date < dateOfProposal) {
+        throw new Error(`Excel row ${rowNumber}: ${columnName} must be on or after the date of proposal.`);
+      }
+      if (date && expectedCompletionDate && date > expectedCompletionDate) {
+        throw new Error(`Excel row ${rowNumber}: ${columnName} must be on or before the expected completion date.`);
+      }
+    }
     if (financialOutlay !== "" && (!Number.isFinite(Number(financialOutlay)) || Number(financialOutlay) < 0)) {
       throw new Error(`Excel row ${rowNumber} has an invalid financial outlay.`);
     }
@@ -136,11 +145,17 @@ function fileName(value) {
   return value?.[0]?.name || "";
 }
 
-function DeliverableRow({ item, index, register, getValues, errors, onRemove }) {
+function DeliverableRow({ item, index, register, getValues, dateOfProposal, expectedCompletionDate, errors, onRemove }) {
   const rowErrors = errors?.[index];
   const dateRules = (otherDateName, label) => ({
     required: `${label} is required.`,
     validate: (value) => {
+      if (value && dateOfProposal && value < dateOfProposal) {
+        return `${label} must be on or after Date of Proposal.`;
+      }
+      if (value && expectedCompletionDate && value > expectedCompletionDate) {
+        return `${label} must be on or before Expected Completion Date.`;
+      }
       const otherDate = getValues(otherDateName);
       if (value && otherDate && value !== otherDate) {
         const isInitiationDate = label === "Initiation date";
@@ -182,6 +197,7 @@ function DeliverableRow({ item, index, register, getValues, errors, onRemove }) 
           fullWidth
           size="small"
           sx={inputSx}
+          slotProps={{ htmlInput: { min: dateOfProposal || undefined, max: expectedCompletionDate || undefined } }}
           error={Boolean(rowErrors?.initiationDate)}
           helperText={rowErrors?.initiationDate?.message}
           {...register(`${baseName}.initiationDate`, dateRules(`${baseName}.closingDate`, "Initiation date"))}
@@ -193,6 +209,7 @@ function DeliverableRow({ item, index, register, getValues, errors, onRemove }) 
           fullWidth
           size="small"
           sx={inputSx}
+          slotProps={{ htmlInput: { min: dateOfProposal || undefined, max: expectedCompletionDate || undefined } }}
           error={Boolean(rowErrors?.closingDate)}
           helperText={rowErrors?.closingDate?.message}
           {...register(`${baseName}.closingDate`, dateRules(`${baseName}.initiationDate`, "Closing date"))}
@@ -267,49 +284,117 @@ function DeliverableRow({ item, index, register, getValues, errors, onRemove }) 
 
 function GanttPreview({ items }) {
   const scheduledItems = items.filter((item) => item?.initiationDate && item?.closingDate && item.closingDate >= item.initiationDate);
-  if (!scheduledItems.length) {
-    return (
-      <Box sx={{ minHeight: 160, p: 1.25, border: "1px solid #ddd", bgcolor: "#fff" }}>
-        <Typography sx={{ color: "#65758b", fontSize: 12 }}>
-          No deliverables to display. Add deliverables with initiation and closing dates to see the Gantt chart.
-        </Typography>
-      </Box>
-    );
-  }
-
-  const timestamps = scheduledItems.flatMap((item) => [Date.parse(`${item.initiationDate}T00:00:00Z`), Date.parse(`${item.closingDate}T00:00:00Z`)]);
-  const start = Math.min(...timestamps);
-  const end = Math.max(...timestamps);
-  const duration = Math.max(end - start, 1);
-  const formatDate = (date) => new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  const totalOutlay = items.reduce((total, item) => {
+    const value = Number(item?.financialOutlay);
+    return total + (Number.isFinite(value) && value > 0 ? value : 0);
+  }, 0);
+  const palette = ["#3182ce", "#1ca379", "#e89b32", "#8755b5", "#d65366", "#4189a8"];
+  const now = new Date();
+  const monthStart = scheduledItems.length
+    ? new Date(Math.min(...scheduledItems.map((item) => Date.parse(`${item.initiationDate}T00:00:00Z`))))
+    : null;
+  const monthEnd = scheduledItems.length
+    ? new Date(Math.max(...scheduledItems.map((item) => Date.parse(`${item.closingDate}T00:00:00Z`))))
+    : null;
+  const startMonth = monthStart ? new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), 1)) : null;
+  const monthCount = startMonth && monthEnd
+    ? (monthEnd.getUTCFullYear() - startMonth.getUTCFullYear()) * 12 + monthEnd.getUTCMonth() - startMonth.getUTCMonth() + 1
+    : 0;
+  const months = Array.from({ length: monthCount }, (_, index) => new Date(Date.UTC(startMonth.getUTCFullYear(), startMonth.getUTCMonth() + index, 1)));
+  const timelineStart = startMonth?.getTime() ?? 0;
+  const timelineEnd = monthCount ? Date.UTC(startMonth.getUTCFullYear(), startMonth.getUTCMonth() + monthCount, 1) : 0;
+  const timelineDuration = Math.max(timelineEnd - timelineStart, 1);
+  const todayOffset = ((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - timelineStart) / timelineDuration) * 100;
+  const hasTodayMarker = todayOffset >= 0 && todayOffset <= 100;
+  const timelineMonths = scheduledItems.length
+    ? Math.max(1, Math.round((Math.max(...scheduledItems.map((item) => Date.parse(`${item.closingDate}T00:00:00Z`))) - Math.min(...scheduledItems.map((item) => Date.parse(`${item.initiationDate}T00:00:00Z`)))) / (365.25 / 12 * 24 * 60 * 60 * 1000)))
+    : 0;
+  const monthLabel = (date) => date.toLocaleDateString(undefined, { month: "short", year: "2-digit", timeZone: "UTC" });
+  const durationLabel = (item) => {
+    const days = (Date.parse(`${item.closingDate}T00:00:00Z`) - Date.parse(`${item.initiationDate}T00:00:00Z`)) / (24 * 60 * 60 * 1000);
+    return `${Math.max(1, Math.round(days / (365.25 / 12 * 24 * 60 * 60 * 1000)))}mo`;
+  };
 
   return (
-    <Box sx={{ minHeight: 160, p: 1.25, border: "1px solid #ddd", bgcolor: "#fff", overflowX: "auto" }}>
-      <Box sx={{ minWidth: 560 }}>
-        <Box sx={{ display: "grid", gridTemplateColumns: "minmax(130px, 1.2fr) 3fr", mb: 0.75, color: "#65758b", fontSize: 10 }}>
-          <span />
-          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-            <span>{formatDate(new Date(start).toISOString().slice(0, 10))}</span>
-            <span>{formatDate(new Date(end).toISOString().slice(0, 10))}</span>
+    <Box sx={{ mb: 2, border: "1px solid #d9dee4", bgcolor: "#fff" }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 1, p: 1.5, bgcolor: "#f8f9fa" }}>
+        {[
+          ["Deliverables", items.length],
+          ["Total outlay (Lakhs)", `₹${totalOutlay.toFixed(2)}`],
+          ["Timeline span", `${timelineMonths}mo`]
+        ].map(([label, value]) => (
+          <Box key={label} sx={{ px: 1, py: 0.5 }}>
+            <Typography sx={{ color: "#65758b", fontSize: 10 }}>{label}</Typography>
+            <Typography sx={{ mt: 0.25, color: "#132e4c", fontSize: 16, fontWeight: 700 }}>{value}</Typography>
+          </Box>
+        ))}
+      </Box>
+
+      {scheduledItems.length ? (
+        <Box sx={{ overflowX: "auto", px: 1, pt: 0.75 }}>
+          <Box sx={{ width: `${160 + monthCount * 54}px` }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: `160px repeat(${monthCount}, 54px)`, height: 34 }}>
+              <Box sx={{ display: "flex", alignItems: "center", px: 1, border: "1px solid #dce2e8", bgcolor: "#f8f9fa", color: "#344457", fontSize: 10, fontWeight: 700 }}>
+                Deliverable
+              </Box>
+              {months.map((month) => (
+                <Box key={month.toISOString()} sx={{ display: "flex", alignItems: "center", justifyContent: "center", borderTop: "1px solid #dce2e8", borderRight: "1px solid #dce2e8", borderBottom: "1px solid #dce2e8", bgcolor: month.getUTCFullYear() === now.getFullYear() && month.getUTCMonth() === now.getMonth() ? "#e5f1fb" : "#f8f9fa", color: "#344457", fontSize: 9, whiteSpace: "nowrap" }}>
+                  {monthLabel(month)}
+                </Box>
+              ))}
+            </Box>
+            <Box sx={{ position: "relative" }}>
+              {hasTodayMarker && (
+                <Box aria-label="Today" sx={{ position: "absolute", zIndex: 2, top: 0, bottom: 0, left: `${160 + (todayOffset / 100) * monthCount * 54}px`, width: "1px", bgcolor: "#ef4444", pointerEvents: "none" }} />
+              )}
+              {scheduledItems.map((item, index) => {
+                const itemStart = Date.parse(`${item.initiationDate}T00:00:00Z`);
+                const itemEnd = Date.parse(`${item.closingDate}T00:00:00Z`);
+                const left = ((itemStart - timelineStart) / timelineDuration) * 100;
+                const width = Math.max(((itemEnd - itemStart) / timelineDuration) * 100, 0.8);
+                const color = palette[index % palette.length];
+                return (
+                  <Box key={`${item.description}-${index}`} sx={{ display: "grid", gridTemplateColumns: `160px repeat(${monthCount}, 54px)`, minHeight: 48 }}>
+                    <Box title={item.description} sx={{ display: "flex", alignItems: "center", px: 1, borderLeft: "1px solid #dce2e8", borderRight: "1px solid #dce2e8", borderBottom: "1px solid #dce2e8", color: "#344457", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {item.description || `Deliverable ${index + 1}`}
+                    </Box>
+                    <Box sx={{ gridColumn: `2 / span ${monthCount}`, position: "relative", borderBottom: "1px solid #dce2e8", backgroundImage: "linear-gradient(to right, #e1e6eb 1px, transparent 1px)", backgroundSize: `${100 / monthCount}% 100%` }}>
+                      <Box title={`${item.initiationDate} to ${item.closingDate}`} sx={{ position: "absolute", left: `${left}%`, width: `${width}%`, top: "50%", transform: "translateY(-50%)", height: 22, display: "flex", alignItems: "center", overflow: "hidden", px: 0.75, borderRadius: 0.75, bgcolor: color, color: "#fff", fontSize: 9, fontWeight: 600, whiteSpace: "nowrap" }}>
+                        {item.description || `Deliverable ${index + 1}`} · {durationLabel(item)}
+                      </Box>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
         </Box>
-        {scheduledItems.map((item, index) => {
-          const itemStart = Date.parse(`${item.initiationDate}T00:00:00Z`);
-          const itemEnd = Date.parse(`${item.closingDate}T00:00:00Z`);
-          const left = ((itemStart - start) / duration) * 100;
-          const width = Math.max(((itemEnd - itemStart) / duration) * 100, 1.5);
-          return (
-            <Box key={`${item.description}-${index}`} sx={{ display: "grid", gridTemplateColumns: "minmax(130px, 1.2fr) 3fr", alignItems: "center", minHeight: 28 }}>
-              <Typography title={item.description} sx={{ overflow: "hidden", pr: 1, color: "#344457", fontSize: 10, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      ) : (
+        <Box sx={{ p: 1.5 }}>
+          <Typography sx={{ color: "#65758b", fontSize: 12 }}>
+            No deliverables to display. Add deliverables with initiation and closing dates to see the Gantt chart.
+          </Typography>
+        </Box>
+      )}
+
+      {scheduledItems.length > 0 && (
+        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5, px: 1.5, py: 1, color: "#52647a" }}>
+          {scheduledItems.map((item, index) => (
+            <Box key={`${item.description}-legend-${index}`} sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+              <Box sx={{ width: 10, height: 10, flex: "0 0 auto", borderRadius: 0.25, bgcolor: palette[index % palette.length] }} />
+              <Typography title={item.description} sx={{ maxWidth: 180, overflow: "hidden", color: "inherit", fontSize: 10, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {item.description || `Deliverable ${index + 1}`}
               </Typography>
-              <Box sx={{ position: "relative", height: 18, borderLeft: "1px solid #dce2e8", borderRight: "1px solid #dce2e8", backgroundImage: "linear-gradient(to right, #eef1f4 1px, transparent 1px)", backgroundSize: "25% 100%" }}>
-                <Box title={`${item.initiationDate} to ${item.closingDate}`} sx={{ position: "absolute", left: `${left}%`, width: `${width}%`, top: 2, bottom: 2, minWidth: 6, borderRadius: 1, bgcolor: "#0b6037" }} />
-              </Box>
             </Box>
-          );
-        })}
-      </Box>
+          ))}
+          {hasTodayMarker && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Box sx={{ height: 10, borderLeft: "1px solid #ef4444" }} />
+              <Typography sx={{ color: "inherit", fontSize: 10 }}>Today</Typography>
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
@@ -368,12 +453,28 @@ function DeliverablesStep() {
     formState: { errors }
   } = useFormContext();
   const { fields, append, remove, replace } = useFieldArray({ control, name: "deliverables.items" });
+  const { replace: replaceYearWiseExpenditures } = useFieldArray({ control, name: "deliverables.yearWiseExpenditures" });
   const { fields: nationalFields, append: appendNational, remove: removeNational } = useFieldArray({ control, name: "deliverables.nationalImportance" });
   const { fields: internationalFields, append: appendInternational, remove: removeInternational } = useFieldArray({ control, name: "deliverables.internationalFootprints" });
   const items = watch("deliverables.items") || [];
+  const expenditureType = watch("deliverables.expenditureType");
+  const dateOfProposal = watch("dateOfProposal");
+  const expectedCompletionDate = watch("expectedCompletionDate");
+  const financialYears = getFinancialYears(dateOfProposal, expectedCompletionDate);
   const [uploadError, setUploadError] = useState("");
   const [uploadStatus, setUploadStatus] = useState("");
   const [isReadingFile, setIsReadingFile] = useState(false);
+
+  useEffect(() => {
+    const currentRows = getValues("deliverables.yearWiseExpenditures") || [];
+    const nextRows = getFinancialYears(dateOfProposal, expectedCompletionDate).map((financialYear) => {
+      const existingRow = currentRows.find((row) => row.financialYear === financialYear);
+      return existingRow || { financialYear, expenditure: "" };
+    });
+    const yearsMatch = currentRows.length === nextRows.length
+      && currentRows.every((row, index) => row.financialYear === nextRows[index].financialYear);
+    if (!yearsMatch) replaceYearWiseExpenditures(nextRows);
+  }, [dateOfProposal, expectedCompletionDate, getValues, replaceYearWiseExpenditures]);
 
   const handleExcelUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -386,7 +487,7 @@ function DeliverablesStep() {
       if (!file.name.toLowerCase().endsWith(".xlsx")) throw new Error("Choose an .xlsx Excel file.");
       const { readSheet } = await import("read-excel-file/browser");
       const worksheetRows = await readSheet(file);
-      replace(parseDeliverablesWorksheet(worksheetRows));
+      replace(parseDeliverablesWorksheet(worksheetRows, getValues("dateOfProposal"), getValues("expectedCompletionDate")));
       setUploadStatus(`Imported deliverables from ${file.name}.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "The workbook could not be read.";
@@ -470,6 +571,8 @@ function DeliverablesStep() {
                 index={index}
                 register={register}
                 getValues={getValues}
+                dateOfProposal={dateOfProposal}
+                expectedCompletionDate={expectedCompletionDate}
                 errors={errors?.deliverables?.items}
                 onRemove={(action) => {
                   if (action === "add") {
@@ -493,7 +596,7 @@ function DeliverablesStep() {
           6.2 Year-wise Estimated Expenditure (Select Anyone)
         </Typography>
         <FormControl error={Boolean(errors?.deliverables?.expenditureType)}>
-          <RadioGroup row name="deliverables.expenditureType" sx={{ columnGap: 1.5, rowGap: 0, flexWrap: "wrap" }}>
+          <RadioGroup row name="deliverables.expenditureType" value={expenditureType || ""} sx={{ columnGap: 1.5, rowGap: 0, flexWrap: "wrap" }}>
             <FormControlLabel
               value="activityWise"
               control={<Radio size="small" {...register("deliverables.expenditureType", { required: "Select an expenditure option." })} />}
@@ -510,6 +613,76 @@ function DeliverablesStep() {
           {errors?.deliverables?.expenditureType && <FormHelperText>{errors.deliverables.expenditureType.message}</FormHelperText>}
         </FormControl>
       </Box>
+
+      {expenditureType === "activityWise" && (
+        <TableContainer sx={{ mt: 1.5, border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff" }}>
+          <Table size="small" aria-label="Activity-wise estimated expenditure">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ ...tableHeaderSx, width: "18%" }}>S. No.</TableCell>
+                <TableCell sx={{ ...tableHeaderSx, width: "34%" }}>Deliverable</TableCell>
+                <TableCell sx={{ ...tableHeaderSx, borderRight: 0 }}>Financial Outlay (Rs. in Lakhs)</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((item, index) => (
+                <TableRow key={`${item?.description || "deliverable"}-${index}`}>
+                  <TableCell sx={{ ...tableCellSx, width: "18%", fontSize: 11 }}>{index + 1}</TableCell>
+                  <TableCell sx={{ ...tableCellSx, width: "34%", fontSize: 11 }}>{item?.description || ""}</TableCell>
+                  <TableCell sx={{ ...tableCellSx, borderRight: 0, fontSize: 11 }}>{item?.financialOutlay ?? ""}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      {expenditureType === "yearWise" && (
+        <Box sx={{ mt: 1.5 }}>
+          <Box sx={{ mb: 1.5, display: "flex", alignItems: "center", gap: 0.75, p: 1.25, border: "1px solid #b8dfc8", borderRadius: 1, bgcolor: "#eaf5ee", color: "#075b35" }}>
+            <Info size={13} />
+            <Typography sx={{ fontSize: 10 }}>
+              Financial years will be calculated based on Date of Proposal and Expected Date of Completion
+            </Typography>
+          </Box>
+          <TableContainer sx={{ border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff" }}>
+            <Table size="small" aria-label="Year-wise estimated expenditure">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ ...tableHeaderSx, width: "38%" }}>Financial Year</TableCell>
+                  <TableCell sx={{ ...tableHeaderSx, borderRight: 0 }}>Expenditure (Rs. in Lakhs)</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {financialYears.length ? financialYears.map((financialYear, index) => (
+                  <TableRow key={financialYear}>
+                    <TableCell sx={{ ...tableCellSx, width: "38%", fontSize: 11 }}>{financialYear}</TableCell>
+                    <TableCell sx={{ ...tableCellSx, borderRight: 0 }}>
+                      <TextField
+                        type="number"
+                        placeholder="Enter amount"
+                        fullWidth
+                        size="small"
+                        sx={inputSx}
+                        slotProps={{ htmlInput: { min: 0, step: "any" } }}
+                        {...register(`deliverables.yearWiseExpenditures.${index}.expenditure`, {
+                          min: { value: 0, message: "Expenditure cannot be negative." }
+                        })}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={2} sx={{ py: 1.25, color: "#65758b", fontSize: 11 }}>
+                      Enter the Date of Proposal and Expected Completion Date in Section 3 to generate financial years.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
 
       <Box sx={{ mt: 2.5, display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 2 }}>
         <DescriptionList

@@ -56,6 +56,7 @@ function SchemeProposalWizard() {
           }
         ],
         expenditureType: "yearWise",
+        yearWiseExpenditures: [],
         nationalImportance: [{ description: "" }],
         internationalFootprints: [{ description: "" }]
       },
