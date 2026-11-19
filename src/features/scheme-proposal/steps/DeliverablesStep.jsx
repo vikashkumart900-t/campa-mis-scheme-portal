@@ -558,7 +558,7 @@ function DeliverablesStep() {
         <Table size="small" aria-label="Deliverables">
           <TableHead>
             <TableRow>
-              {["S. No.", "Deliverables *", "Unit *", "Initiation Date *", "Closing Date *", "Financial Outlay (Rs. in Lakhs) *", "Remarks", "Upload (if any)", "Actions"].map((heading) => (
+              {["S. No.", "Deliverables *", "Unit *", "Initiation Date *", "Closing Date *", "Financial Outlay (Rs) *", "Remarks", "Upload (if any)", "Actions"].map((heading) => (
                 <TableCell key={heading} sx={tableHeaderSx}>{heading}</TableCell>
               ))}
             </TableRow>

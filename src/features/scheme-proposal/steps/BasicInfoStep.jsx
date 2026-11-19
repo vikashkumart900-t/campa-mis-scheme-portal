@@ -34,6 +34,44 @@ const readOnlyInputSx = {
   "& .MuiInputBase-input": { color: "#667085", cursor: "not-allowed" }
 };
 
+function calculateSchemeDuration(startValue, endValue) {
+  if (!startValue || !endValue) return "";
+
+  const parseDate = (value) => {
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) return null;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    ) return null;
+    return date;
+  };
+
+  const start = parseDate(startValue);
+  const end = parseDate(endValue);
+  if (!start || !end || end < start) return "";
+
+  let totalMonths =
+    (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+    (end.getUTCMonth() - start.getUTCMonth());
+  if (end.getUTCDate() < start.getUTCDate()) totalMonths -= 1;
+
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  const startYear = start.getUTCMonth() >= 3
+    ? start.getUTCFullYear()
+    : start.getUTCFullYear() - 1;
+  const endYear = end.getUTCMonth() >= 3
+    ? end.getUTCFullYear()
+    : end.getUTCFullYear() - 1;
+  const startFiscalYear = `${startYear}-${String(startYear + 1).slice(-2)}`;
+  const endFiscalYear = `${endYear}-${String(endYear + 1).slice(-2)}`;
+
+  return `${startFiscalYear} to ${endFiscalYear} (${years} year ${months} month)`;
+}
+
 const sectionTitleSx = {
   mb: 2,
   color: "#132e4c",
@@ -235,8 +273,11 @@ function BasicInfoStep() {
   const {
     control,
     register,
+    setValue,
     formState: { errors }
   } = useFormContext();
+  const dateOfProposal = useWatch({ control, name: "dateOfProposal" });
+  const expectedCompletionDate = useWatch({ control, name: "expectedCompletionDate" });
   const {
     fields: stateDistrictFields,
     append: appendStateDistrict,
@@ -255,6 +296,14 @@ function BasicInfoStep() {
       helperText: fieldError?.message
     };
   };
+
+  useEffect(() => {
+    setValue(
+      "schemeDuration",
+      calculateSchemeDuration(dateOfProposal, expectedCompletionDate),
+      { shouldDirty: true }
+    );
+  }, [dateOfProposal, expectedCompletionDate, setValue]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -404,8 +453,8 @@ function BasicInfoStep() {
           <FormField id="proposedFinancialOutlay" label="3.3 Proposed Financial Outlay (Rs)" required>
             <TextField
               id="proposedFinancialOutlay"
-              type="number"
-              inputProps={{ min: 0, step: "any" }}
+              type="text"
+              inputProps={{ inputMode: "decimal" }}
               placeholder="Enter amount in rupees"
               fullWidth
               size="small"
@@ -413,17 +462,22 @@ function BasicInfoStep() {
               {...getFieldProps("proposedFinancialOutlay", {
                 required: "Financial outlay is required.",
                 valueAsNumber: true,
-                min: { value: 0, message: "Financial outlay cannot be negative." }
+                validate: (value) => (
+                  value === "" ||
+                  (Number.isFinite(value) && value >= 0) ||
+                  "Enter a valid non-negative amount."
+                )
               })}
             />
           </FormField>
           <FormField id="schemeDuration" label="3.4 Scheme Duration">
             <TextField
               id="schemeDuration"
-              placeholder="Enter duration (e.g., 5 years)"
+              placeholder="Calculated automatically"
               fullWidth
               size="small"
-              sx={inputSx}
+              sx={readOnlyInputSx}
+              slotProps={{ input: { readOnly: true } }}
               {...getFieldProps("schemeDuration")}
             />
           </FormField>
