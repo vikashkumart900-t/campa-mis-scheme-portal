@@ -40,7 +40,7 @@ export const proposalSteps = [
   {
     id: "documentsEmployment",
     label: "Documents & Employment",
-    fields: ["documentsEmployment.imageDescription", "documentsEmployment.imageFiles"]
+    fields: []
   },
   {
     id: "techExitDeclaration",

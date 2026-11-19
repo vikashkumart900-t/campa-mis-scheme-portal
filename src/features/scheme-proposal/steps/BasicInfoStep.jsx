@@ -380,13 +380,31 @@ function BasicInfoStep() {
               {...getFieldProps("organizationName", { required: "Implementing agency is required." })}
             />
           </FormField>
-          <FormField id="officerName" label="2.2 Name of the Nodal Officer of Implementing Agency">
-            <TextField id="officerName" fullWidth size="small" sx={inputSx} {...getFieldProps("officerName")} />
+          <FormField id="officerName" label="2.2 Name of the Nodal Officer of Implementing Agency" required>
+            <TextField
+              id="officerName"
+              fullWidth
+              size="small"
+              sx={inputSx}
+              {...getFieldProps("officerName", {
+                required: "Nodal officer name is required.",
+                validate: (value) => Boolean(value.trim()) || "Nodal officer name is required."
+              })}
+            />
           </FormField>
-          <FormField id="designation" label="2.3 Designation">
-            <TextField id="designation" fullWidth size="small" sx={inputSx} {...getFieldProps("designation")} />
+          <FormField id="designation" label="2.3 Designation" required>
+            <TextField
+              id="designation"
+              fullWidth
+              size="small"
+              sx={inputSx}
+              {...getFieldProps("designation", {
+                required: "Designation is required.",
+                validate: (value) => Boolean(value.trim()) || "Designation is required."
+              })}
+            />
           </FormField>
-          <FormField id="email" label="2.4 Email ID">
+          <FormField id="email" label="2.4 Email ID" required>
             <TextField
               id="email"
               type="email"
@@ -394,11 +412,12 @@ function BasicInfoStep() {
               size="small"
               sx={inputSx}
               {...getFieldProps("email", {
+                required: "Email address is required.",
                 pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email address." }
               })}
             />
           </FormField>
-          <FormField id="mobile" label="2.5 Phone No">
+          <FormField id="mobile" label="2.5 Phone No" required>
             <TextField
               id="mobile"
               type="tel"
@@ -407,6 +426,7 @@ function BasicInfoStep() {
               size="small"
               sx={inputSx}
               {...getFieldProps("mobile", {
+                required: "Phone number is required.",
                 pattern: { value: /^[0-9]{10}$/, message: "Enter a 10-digit phone number." }
               })}
             />
@@ -437,8 +457,15 @@ function BasicInfoStep() {
           3. Scheme Details
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-          <FormField id="dateOfProposal" label="3.1 Date of Proposal">
-            <TextField id="dateOfProposal" type="date" fullWidth size="small" sx={inputSx} {...getFieldProps("dateOfProposal")} />
+          <FormField id="dateOfProposal" label="3.1 Date of Proposal" required>
+            <TextField
+              id="dateOfProposal"
+              type="date"
+              fullWidth
+              size="small"
+              sx={inputSx}
+              {...getFieldProps("dateOfProposal", { required: "Date of proposal is required." })}
+            />
           </FormField>
           <FormField id="expectedCompletionDate" label="3.2 Expected Completion Date" required>
             <TextField

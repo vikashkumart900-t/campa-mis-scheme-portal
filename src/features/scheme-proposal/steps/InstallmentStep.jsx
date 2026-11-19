@@ -84,12 +84,12 @@ function InstallmentStep() {
   const schemeName = watch("schemeName");
   const proposedFinancialOutlay = watch("proposedFinancialOutlay");
   const installmentRows = watch("installment.installments") || [];
-  const financialYears = getFinancialYears(dateOfProposal, expectedCompletionDate);
+  const financialYears = getFinancialYears(dateOfProposal, expectedCompletionDate).slice(0, 1);
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const currentRows = getValues("installment.installments") || [];
-    const nextRows = getFinancialYears(dateOfProposal, expectedCompletionDate).map((financialYear, index) => {
+    const nextRows = getFinancialYears(dateOfProposal, expectedCompletionDate).slice(0, 1).map((financialYear, index) => {
       const currentRow = currentRows.find((row) => row.financialYear === financialYear);
       return currentRow || {
         financialYear,

@@ -69,6 +69,7 @@ const tableCellSx = {
   verticalAlign: "middle"
 };
 const emptyKmlFile = () => ({ description: "", file: null });
+const emptyImageGalleryRow = () => ({ description: "", files: null });
 const emptyEmploymentRow = (financialYear) => ({
   financialYear,
   laborCost: "",
@@ -82,10 +83,6 @@ const fallbackFinancialYears = Array.from({ length: 11 }, (_, index) => {
   const startYear = currentFinancialYear - 1 + index;
   return `${startYear}-${String(startYear + 1).slice(-2)}`;
 });
-
-function fileNames(fileList) {
-  return Array.from(fileList || []).map((file) => file.name).join(", ");
-}
 
 function fileListMessage(fileList) {
   return Array.from(fileList || []).map((file) => file.name).join(", ") || "No file chosen";
@@ -107,29 +104,23 @@ function DocumentsEmploymentStep() {
     remove: removeKml
   } = useFieldArray({ control, name: "documentsEmployment.kmlFiles" });
   const {
+    fields: imageGalleryFields,
+    append: appendImageGallery,
+    remove: removeImageGallery
+  } = useFieldArray({ control, name: "documentsEmployment.imageGallery" });
+  const {
     fields: employmentRows,
     append: appendEmployment,
     remove: removeEmployment
   } = useFieldArray({ control, name: "documentsEmployment.employmentRows" });
   const documentErrors = errors.documentsEmployment || {};
   const kmlFileValues = watch("documentsEmployment.kmlFiles") || [];
-  const imageFiles = watch("documentsEmployment.imageFiles");
+  const imageGalleryValues = watch("documentsEmployment.imageGallery") || [];
   const employmentRowValues = watch("documentsEmployment.employmentRows") || [];
   const dateOfProposal = watch("dateOfProposal");
   const expectedCompletionDate = watch("expectedCompletionDate");
   const financialYears = getFinancialYears(dateOfProposal, expectedCompletionDate);
   const selectableFinancialYears = financialYears.length > 0 ? financialYears : fallbackFinancialYears;
-  const imageRegistration = register("documentsEmployment.imageFiles", {
-    validate: (files) => {
-      if (!files?.length) return "Upload at least one image.";
-      const selectedFiles = Array.from(files);
-      if (!selectedFiles.every((file) => /\.(jpe?g|png)$/i.test(file.name))) {
-        return "Only JPG, JPEG, or PNG images are allowed.";
-      }
-      return selectedFiles.every((file) => file.size <= 2 * 1024 * 1024)
-        || "Each image must be 2 MB or smaller.";
-    }
-  });
   const handleFinancialYearChange = (event, onChange) => {
     const financialYear = event.target.value;
     onChange(event);
@@ -248,7 +239,7 @@ function DocumentsEmploymentStep() {
                   {rowError?.file && <Typography role="alert" sx={{ mt: 0.25, color: "error.main", fontSize: 10 }}>{rowError.file.message}</Typography>}
                 </Box>
                 <Typography sx={{ pt: 1, color: "#667085", fontSize: 11, overflowWrap: "anywhere" }}>
-                  {fileNames(kmlFileValues[index]?.file)}
+                  {fileListMessage(kmlFileValues[index]?.file)}
                 </Typography>
                 <IconButton
                   type="button"
@@ -265,50 +256,91 @@ function DocumentsEmploymentStep() {
         </Paper>
 
         <Paper elevation={0} sx={{ p: 1.5, border: "1px solid #e0e4ea", borderRadius: 1.5, bgcolor: "#fff" }}>
-          <Typography component="h3" sx={{ ...subSectionTitleSx, mb: 1 }}>
-            10.2 Image Gallery <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
-            <Info size={12} color="#0785c2" title="JPG, JPEG, or PNG images, up to 2 MB each" />
-          </Typography>
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.3fr 1fr 0.8fr" }, gap: 1.25, px: 0.25, pb: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1 }}>
+            <Typography component="h3" sx={subSectionTitleSx}>
+              10.2 Image Gallery <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+              <Info size={12} color="#0785c2" title="JPG, JPEG, or PNG images, up to 2 MB each" />
+            </Typography>
+            <IconButton
+              type="button"
+              aria-label="Add image gallery item"
+              onClick={() => appendImageGallery(emptyImageGalleryRow())}
+              sx={{ width: 30, height: 30, borderRadius: 1, bgcolor: "#0b6037", color: "#fff", "&:hover": { bgcolor: "#07522f" } }}
+            >
+              <Plus size={16} />
+            </IconButton>
+          </Box>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.3fr 1fr 0.8fr 34px" }, gap: 1.25, px: 0.25, pb: 0.5 }}>
             <Typography sx={{ ...fieldLabelSx, mb: 0 }}>Description <Box component="span" sx={{ color: "#d32f2f" }}>*</Box></Typography>
             <Typography sx={{ ...fieldLabelSx, mb: 0 }}>Images (JPG / JPEG / PNG, max 2 MB each) <Box component="span" sx={{ color: "#d32f2f" }}>*</Box></Typography>
             <Typography sx={{ ...fieldLabelSx, mb: 0 }}>Uploaded file</Typography>
+            <Typography sx={{ ...fieldLabelSx, mb: 0 }}>Action</Typography>
           </Box>
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.3fr 1fr 0.8fr" }, gap: 1.25, alignItems: "start", pt: 0.75, borderTop: "1px solid #eef0f3", "& > *": { minWidth: 0 } }}>
-            <TextField
-              placeholder="Enter description for image file"
-              fullWidth
-              size="small"
-              sx={inputSx}
-              error={Boolean(documentErrors.imageDescription)}
-              helperText={documentErrors.imageDescription?.message}
-              {...register("documentsEmployment.imageDescription", { required: "Description is required." })}
-            />
-            <Box>
-              <TextField
-                type="file"
-                fullWidth
-                size="small"
-                sx={inputSx}
-                slotProps={{ htmlInput: { accept: ".jpg,.jpeg,.png", multiple: true } }}
-                error={Boolean(documentErrors.imageFiles)}
-                {...imageRegistration}
-                onChange={(event) => {
-                  imageRegistration.onChange(event);
-                  const tooLarge = Array.from(event.target.files || []).some((file) => file.size > 2 * 1024 * 1024);
-                  if (tooLarge) {
-                    setError("documentsEmployment.imageFiles", { type: "validate", message: "Each image must be 2 MB or smaller." });
-                  } else {
-                    clearErrors("documentsEmployment.imageFiles");
-                  }
+          {imageGalleryFields.map((field, index) => {
+            const baseName = `documentsEmployment.imageGallery.${index}`;
+            const rowError = documentErrors.imageGallery?.[index];
+            const fileRegistration = register(`${baseName}.files`, {
+              validate: (files) => {
+                if (!files?.length) return "Select an image for this row.";
+                const selectedFiles = Array.from(files);
+                if (!selectedFiles.every((file) => /\.(jpe?g|png)$/i.test(file.name))) {
+                  return "Only JPG, JPEG, or PNG images are allowed.";
+                }
+                return selectedFiles.every((file) => file.size <= 2 * 1024 * 1024)
+                  || "Each image must be 2 MB or smaller.";
+              }
+            });
+
+            return (
+              <Box
+                key={field.id}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", md: "1.3fr 1fr 0.8fr 34px" },
+                  gap: 1.25,
+                  alignItems: "start",
+                  pt: 0.75,
+                  pb: 0.75,
+                  borderTop: "1px solid #eef0f3",
+                  "& > *": { minWidth: 0 }
                 }}
-              />
-              {documentErrors.imageFiles && <Typography role="alert" sx={{ mt: 0.25, color: "error.main", fontSize: 10 }}>{documentErrors.imageFiles.message}</Typography>}
-            </Box>
-            <Typography sx={{ pt: 1, color: "#667085", fontSize: 11, overflowWrap: "anywhere" }}>
-              {fileListMessage(imageFiles)}
-            </Typography>
-          </Box>
+              >
+                <TextField
+                  placeholder="Enter description for image file"
+                  fullWidth
+                  size="small"
+                  sx={inputSx}
+                  error={Boolean(rowError?.description)}
+                  helperText={rowError?.description?.message}
+                  {...register(`${baseName}.description`, { required: "Description is required." })}
+                />
+                <Box>
+                  <TextField
+                    type="file"
+                    fullWidth
+                    size="small"
+                    sx={inputSx}
+                    slotProps={{ htmlInput: { accept: ".jpg,.jpeg,.png" } }}
+                    error={Boolean(rowError?.files)}
+                    {...fileRegistration}
+                  />
+                  {rowError?.files && <Typography role="alert" sx={{ mt: 0.25, color: "error.main", fontSize: 10 }}>{rowError.files.message}</Typography>}
+                </Box>
+                <Typography sx={{ pt: 1, color: "#667085", fontSize: 11, overflowWrap: "anywhere" }}>
+                  {fileListMessage(imageGalleryValues[index]?.files)}
+                </Typography>
+                <IconButton
+                  type="button"
+                  aria-label={`Remove image gallery item ${index + 1}`}
+                  disabled={imageGalleryFields.length <= 1}
+                  onClick={() => removeImageGallery(index)}
+                  sx={{ width: 30, height: 30, borderRadius: 1, bgcolor: "#e52b2e", color: "#fff", "&:hover": { bgcolor: "#c81e24" }, "&.Mui-disabled": { bgcolor: "#f4a1a2", color: "#fff" } }}
+                >
+                  <Trash2 size={16} />
+                </IconButton>
+              </Box>
+            );
+          })}
         </Paper>
       </Paper>
 
