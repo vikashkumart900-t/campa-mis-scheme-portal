@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
-import { Info } from "lucide-react";
+import { Download, Eye, FileText, Info } from "lucide-react";
+import proposalPdf from "../../../assets/Revised guidelines for proposing schemes (29.12.2025).pdf";
 
 const uploadBoxSx = {
   display: "flex",
@@ -135,8 +136,112 @@ function ReviewSubmissionStep() {
         </Typography>
       </Box>
 
-      <FileUploadRow label="Upload Signature" info onFileChange={() => {}} />
-      <FileUploadRow label="Upload Supporting Document" optional info onFileChange={() => {}} />
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 1,
+          mb: 2,
+          flexWrap: "wrap"
+        }}
+      >
+        <Box
+          sx={{
+            width: { xs: "100%", sm: 330 },
+            flexShrink: 0
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              mb: 1
+            }}
+          >
+            <Box
+              sx={{
+                width: 38,
+                height: 46,
+                borderRadius: 0.75,
+                background: "#fff",
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0
+              }}
+            >
+              <FileText size={38} color="#d32f2f" strokeWidth={1.8} />
+            </Box>
+
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#26384a", lineHeight: 1.2 }}>
+                Proposal_DPR_Preview.pdf
+              </Typography>
+              <Typography sx={{ mt: 0.5, fontSize: 10, color: "#6b7785", lineHeight: 1.2 }}>
+                Size: 11.2 MB &nbsp;|&nbsp; Last updated: Nov 19, 2026 11:42 AM
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
+            <Button
+              component="a"
+              href={proposalPdf}
+              target="_blank"
+              rel="noreferrer"
+              startIcon={<Eye size={14} />}
+              sx={{
+                flex: 1,
+                minHeight: 31,
+                px: 1,
+                border: "1.5px solid #1f7b67",
+                borderRadius: 1,
+                color: "#1f7b67",
+                background: "#fff",
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: "none",
+                whiteSpace: "nowrap",
+                "&:hover": { border: "1.5px solid #195d51", background: "#f4faf8" }
+              }}
+            >
+              Open PDF Preview
+            </Button>
+            <Button
+              component="a"
+              href={proposalPdf}
+              download="Proposal_DPR_Preview.pdf"
+              startIcon={<Download size={14} />}
+              sx={{
+                flex: 1,
+                minHeight: 31,
+                px: 1,
+                borderRadius: 1,
+                background: "#075c3a",
+                color: "#fff",
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: "none",
+                whiteSpace: "nowrap",
+                "&:hover": { background: "#064a30" }
+              }}
+            >
+              Download PDF
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+          gap: 2
+        }}
+      >
+        <FileUploadRow label="Upload Signature" info onFileChange={() => {}} />
+        <FileUploadRow label="Upload Supporting Document" optional info onFileChange={() => {}} />
+      </Box>
     </Box>
   );
 }
