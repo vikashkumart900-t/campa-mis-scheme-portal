@@ -122,6 +122,8 @@ function SchemeProposalWizard() {
   const [evaluationResearchError, setEvaluationResearchError] = useState("");
   const [savingDocumentsEmployment, setSavingDocumentsEmployment] = useState(false);
   const [documentsEmploymentError, setDocumentsEmploymentError] = useState("");
+  const [savingTechExitDeclaration, setSavingTechExitDeclaration] = useState(false);
+  const [techExitDeclarationError, setTechExitDeclarationError] = useState("");
   const [loadedSchemeId, setLoadedSchemeId] = useState(null);
   const [schemeSubmissionIds, setSchemeSubmissionIds] = useState(null);
   const [schemeNameError, setSchemeNameError] = useState("");
@@ -280,7 +282,7 @@ function SchemeProposalWizard() {
   };
 
   const goToNextStep = async () => {
-    if (activeStep === 0 || ["objectivesFunding", "deliverables", "evaluationResearch"].includes(proposalSteps[activeStep].id)) {
+    if (activeStep === 0 || ["objectivesFunding", "deliverables", "evaluationResearch", "techExitDeclaration"].includes(proposalSteps[activeStep].id)) {
       await saveAndGoToNextStep();
       return;
     }
@@ -627,6 +629,61 @@ function SchemeProposalWizard() {
       } finally {
         setSavingDocumentsEmployment(false);
       }
+    } else if (proposalSteps[activeStep].id === "techExitDeclaration") {
+      setSavingTechExitDeclaration(true);
+      setTechExitDeclarationError("");
+      try {
+        const values = getValues().techExitDeclaration || {};
+        const selectedSchemeId = Number(schemeId);
+        if (!Number.isSafeInteger(selectedSchemeId) || selectedSchemeId <= 0) {
+          throw new Error("The selected scheme is missing a valid scheme ID.");
+        }
+        const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+        if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+          throw new Error("Your session is missing an access token. Please sign in again.");
+        }
+
+        const technologicalDocument = values.technologyDocument?.[0];
+        const exitProtocolDocument = values.exitProtocolDocument?.[0];
+        if (!technologicalDocument || !exitProtocolDocument) {
+          throw new Error("Upload both required supporting documents.");
+        }
+
+        const payload = {
+          technologicalInterventionDescription: (values.technologyIntervention || "").trim(),
+          exitProtocolDescription: (values.exitProtocol || "").trim()
+        };
+        const formData = new FormData();
+        formData.append("request", JSON.stringify(payload));
+        formData.append("technologicalDocument", technologicalDocument);
+        formData.append("exitProtocolDocument", exitProtocolDocument);
+
+        const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+        const response = await fetch(apiUrls.misTechExit(selectedSchemeId), {
+          method: "POST",
+          headers: {
+            Authorization: authorization
+          },
+          body: formData
+        });
+        const responseText = await response.text();
+        let result;
+        if (responseText) {
+          try {
+            result = JSON.parse(responseText);
+          } catch {
+            result = { message: responseText };
+          }
+        }
+        if (!response.ok || result?.success === false) {
+          throw new Error(result?.message || result?.error || `Request failed with status ${response.status}`);
+        }
+      } catch (error) {
+        setTechExitDeclarationError(`Unable to save tech-exit declaration: ${error.message}`);
+        return;
+      } finally {
+        setSavingTechExitDeclaration(false);
+      }
     }
 
     setSavedStepIndex(activeStep);
@@ -743,6 +800,7 @@ function SchemeProposalWizard() {
             setDeliverablesError("");
             setEvaluationResearchError("");
             setDocumentsEmploymentError("");
+            setTechExitDeclarationError("");
           }}
           onSubmit={saveAndGoToNextStep}
         >
@@ -766,6 +824,11 @@ function SchemeProposalWizard() {
               {documentsEmploymentError}
             </Typography>
           )}
+          {techExitDeclarationError && activeStep === proposalSteps.findIndex((step) => step.id === "techExitDeclaration") && (
+            <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>
+              {techExitDeclarationError}
+            </Typography>
+          )}
           <ActiveStepForm />
           {savedStepIndex !== null && activeStep === savedStepIndex + 1 && (
             <Typography role="status" sx={{ mt: 1, color: "#087638", fontSize: 12 }}>
@@ -777,6 +840,8 @@ function SchemeProposalWizard() {
                     ? "Evaluation & Research has been saved."
                     : proposalSteps[savedStepIndex].id === "documentsEmployment"
                       ? "Documents & Employment have been saved."
+                      : proposalSteps[savedStepIndex].id === "techExitDeclaration"
+                        ? "Tech, Exit & Declaration has been saved."
                 : `${proposalSteps[savedStepIndex].label} is retained while this wizard is open. Draft saving to the server is not connected yet.`}
             </Typography>
           )}
@@ -784,7 +849,7 @@ function SchemeProposalWizard() {
             <Button
               type="button"
               variant="outlined"
-              disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment}
+              disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment || savingTechExitDeclaration}
               onClick={() => {
                 setSavedStepIndex(null);
                 setActiveStep((currentStep) => currentStep - 1);
@@ -801,11 +866,11 @@ function SchemeProposalWizard() {
                   </Button>
                 ) : (
                   <>
-                    <Button type="button" variant="outlined" disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment} onClick={goToNextStep} sx={{ textTransform: "none" }}>
-                      {savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment ? "Saving..." : "Next"}
+                    <Button type="button" variant="outlined" disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment || savingTechExitDeclaration} onClick={goToNextStep} sx={{ textTransform: "none" }}>
+                      {savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment || savingTechExitDeclaration ? "Saving..." : "Next"}
                     </Button>
-                    <Button type="submit" variant="contained" disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment} sx={{ textTransform: "none" }}>
-                      {savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment ? "Saving..." : "Save & Next"}
+                    <Button type="submit" variant="contained" disabled={savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment || savingTechExitDeclaration} sx={{ textTransform: "none" }}>
+                      {savingObjectivesFunding || savingDeliverables || savingEvaluationResearch || savingDocumentsEmployment || savingTechExitDeclaration ? "Saving..." : "Save & Next"}
                     </Button>
                   </>
                 )}
