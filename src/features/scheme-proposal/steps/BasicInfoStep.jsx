@@ -500,7 +500,7 @@ function BasicInfoStep() {
           <FormField id="schemeDuration" label="3.4 Scheme Duration">
             <TextField
               id="schemeDuration"
-              placeholder="Calculated automatically"
+              placeholder="Scheme duration"
               fullWidth
               size="small"
               sx={readOnlyInputSx}

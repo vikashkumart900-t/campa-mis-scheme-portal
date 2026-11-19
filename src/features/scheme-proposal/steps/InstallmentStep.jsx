@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Box,
-  Button,
   FormControl,
   FormHelperText,
   Paper,
@@ -15,7 +14,6 @@ import {
   Typography
 } from "@mui/material";
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { proposalSteps } from "../config/proposalSteps";
 import { getFinancialYears } from "../utils/financialYears";
 
 const sectionSx = {
@@ -58,23 +56,12 @@ const tableCellSx = {
   borderRight: "1px solid #e0e4ea",
   verticalAlign: "middle"
 };
-const bankFieldNames = [
-  "accountName",
-  "bankName",
-  "ifscCode",
-  "branchNameAddress",
-  "accountNumber",
-  "confirmAccountNumber"
-];
-
 function InstallmentStep() {
   const {
     control,
     getValues,
     register,
-    setError,
     clearErrors,
-    trigger,
     watch,
     formState: { errors }
   } = useFormContext();
@@ -84,8 +71,6 @@ function InstallmentStep() {
   const schemeName = watch("schemeName");
   const proposedFinancialOutlay = watch("proposedFinancialOutlay");
   const installmentRows = watch("installment.installments") || [];
-  const financialYears = getFinancialYears(dateOfProposal, expectedCompletionDate).slice(0, 1);
-  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const currentRows = getValues("installment.installments") || [];
@@ -108,29 +93,6 @@ function InstallmentStep() {
     || !Number.isFinite(Number(proposedFinancialOutlay))
     ? ""
     : proposedFinancialOutlay;
-  const registerField = (name, rules = {}) => register(name, {
-    ...rules,
-    onChange: () => setIsSaved(false)
-  });
-  const saveInstallments = async () => {
-    setIsSaved(false);
-    if (!financialYears.length) {
-      setError("installment.installments", {
-        type: "required",
-        message: "Enter the proposal and expected completion dates to generate installment years."
-      });
-      return;
-    }
-
-    const fieldsToValidate = [
-      ...installmentRows.flatMap((_, index) => [
-        `installment.installments.${index}.duration`,
-        `installment.installments.${index}.amount`
-      ]),
-      ...bankFieldNames.map((name) => `installment.bankDetails.${name}`)
-    ];
-    if (await trigger(fieldsToValidate)) setIsSaved(true);
-  };
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -209,7 +171,7 @@ function InstallmentStep() {
                       sx={inputSx}
                       error={Boolean(errors?.installment?.installments?.[index]?.duration)}
                       helperText={errors?.installment?.installments?.[index]?.duration?.message}
-                      {...registerField(`installment.installments.${index}.duration`, {
+                      {...register(`installment.installments.${index}.duration`, {
                         required: "Duration is required."
                       })}
                     />
@@ -224,7 +186,7 @@ function InstallmentStep() {
                       slotProps={{ htmlInput: { min: 0, step: "any" } }}
                       error={Boolean(errors?.installment?.installments?.[index]?.amount)}
                       helperText={errors?.installment?.installments?.[index]?.amount?.message}
-                      {...registerField(`installment.installments.${index}.amount`, {
+                      {...register(`installment.installments.${index}.amount`, {
                         required: "Amount is required.",
                         setValueAs: (value) => value === "" ? "" : Number(value),
                         validate: (value) => Number.isFinite(Number(value)) && Number(value) >= 0 || "Enter a valid non-negative amount."
@@ -261,7 +223,7 @@ function InstallmentStep() {
               sx={inputSx}
               error={Boolean(errors?.installment?.bankDetails?.accountName)}
               helperText={errors?.installment?.bankDetails?.accountName?.message}
-              {...registerField("installment.bankDetails.accountName", { required: "Account name is required." })}
+              {...register("installment.bankDetails.accountName", { required: "Account name is required." })}
             />
           </FormControl>
           <FormControl error={Boolean(errors?.installment?.bankDetails?.bankName)}>
@@ -273,7 +235,7 @@ function InstallmentStep() {
               sx={inputSx}
               error={Boolean(errors?.installment?.bankDetails?.bankName)}
               helperText={errors?.installment?.bankDetails?.bankName?.message}
-              {...registerField("installment.bankDetails.bankName", { required: "Bank name is required." })}
+              {...register("installment.bankDetails.bankName", { required: "Bank name is required." })}
             />
           </FormControl>
           <FormControl error={Boolean(errors?.installment?.bankDetails?.ifscCode)}>
@@ -285,7 +247,7 @@ function InstallmentStep() {
               sx={inputSx}
               error={Boolean(errors?.installment?.bankDetails?.ifscCode)}
               helperText={errors?.installment?.bankDetails?.ifscCode?.message}
-              {...registerField("installment.bankDetails.ifscCode", {
+              {...register("installment.bankDetails.ifscCode", {
                 required: "IFSC code is required.",
                 setValueAs: (value) => value.trim().toUpperCase(),
                 validate: (value) => /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value) || "Enter a valid 11-character IFSC code."
@@ -302,7 +264,7 @@ function InstallmentStep() {
               sx={inputSx}
               error={Boolean(errors?.installment?.bankDetails?.branchNameAddress)}
               helperText={errors?.installment?.bankDetails?.branchNameAddress?.message}
-              {...registerField("installment.bankDetails.branchNameAddress", { required: "Branch name and address are required." })}
+              {...register("installment.bankDetails.branchNameAddress", { required: "Branch name and address are required." })}
             />
           </FormControl>
           <FormControl error={Boolean(errors?.installment?.bankDetails?.accountNumber)}>
@@ -314,7 +276,7 @@ function InstallmentStep() {
               sx={inputSx}
               error={Boolean(errors?.installment?.bankDetails?.accountNumber)}
               helperText={errors?.installment?.bankDetails?.accountNumber?.message}
-              {...registerField("installment.bankDetails.accountNumber", {
+              {...register("installment.bankDetails.accountNumber", {
                 required: "Account number is required.",
                 validate: (value) => Boolean(value.trim()) || "Account number is required."
               })}
@@ -329,7 +291,7 @@ function InstallmentStep() {
               sx={inputSx}
               error={Boolean(errors?.installment?.bankDetails?.confirmAccountNumber)}
               helperText={errors?.installment?.bankDetails?.confirmAccountNumber?.message}
-              {...registerField("installment.bankDetails.confirmAccountNumber", {
+              {...register("installment.bankDetails.confirmAccountNumber", {
                 required: "Confirm account number is required.",
                 validate: (value) => value.trim() === getValues("installment.bankDetails.accountNumber")?.trim()
                   || "Account numbers do not match."
@@ -338,21 +300,6 @@ function InstallmentStep() {
           </FormControl>
         </Box>
 
-        <Box sx={{ mt: 1.75, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
-          <Button
-            type="button"
-            variant="contained"
-            onClick={saveInstallments}
-            sx={{ bgcolor: "#075b35", fontSize: 11, fontWeight: 700, textTransform: "none", "&:hover": { bgcolor: "#064a2b" } }}
-          >
-            Save Installments &amp; Bank Details
-          </Button>
-          {isSaved && (
-            <Typography role="status" sx={{ color: "#087638", fontSize: 11 }}>
-              Installments and bank details are saved in this form.
-            </Typography>
-          )}
-        </Box>
       </Paper>
     </Box>
   );
