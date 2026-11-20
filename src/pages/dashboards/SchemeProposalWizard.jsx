@@ -32,11 +32,15 @@ function SchemeProposalWizard() {
   const schemeId = searchParams.get("schemeId");
   const [activeStep, setActiveStep] = useState(0);
   const [savedStepIndex, setSavedStepIndex] = useState(null);
+  const [savingReviewSubmission, setSavingReviewSubmission] = useState(false);
+  const [reviewSubmissionError, setReviewSubmissionError] = useState("");
   const formMethods = useForm({
     mode: "onBlur",
     shouldUnregister: false,
     defaultValues: {
       reviewSubmission: { username: "" },
+      signatureFile: null,
+      supportingDocument: null,
       objectivesFunding: {
         objectives: [],
         hasStateComponents: "",
@@ -741,6 +745,59 @@ function SchemeProposalWizard() {
       } finally {
         setSavingInstallment(false);
       }
+    } else if (proposalSteps[activeStep].id === "reviewSubmission") {
+      setSavingReviewSubmission(true);
+      setReviewSubmissionError("");
+      try {
+        const selectedSchemeId = Number(schemeId);
+        if (!Number.isSafeInteger(selectedSchemeId) || selectedSchemeId <= 0) {
+          throw new Error("The selected scheme is missing a valid scheme ID.");
+        }
+
+        const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+        if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+          throw new Error("Your session is missing an access token. Please sign in again.");
+        }
+
+        const signatureFile = getValues("signatureFile")?.[0];
+        if (!signatureFile) {
+          throw new Error("Signature file is required.");
+        }
+
+        const supportingDocument = getValues("supportingDocument")?.[0];
+
+        const formData = new FormData();
+        formData.append("signatureFile", signatureFile);
+        if (supportingDocument) {
+          formData.append("supportingDocument", supportingDocument);
+        }
+
+        const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+        const response = await fetch(apiUrls.misFinalDocuments(selectedSchemeId), {
+          method: "POST",
+          headers: { Authorization: authorization },
+          body: formData
+        });
+
+        const responseText = await response.text();
+        let result;
+        if (responseText) {
+          try {
+            result = JSON.parse(responseText);
+          } catch {
+            result = { message: responseText };
+          }
+        }
+
+        if (!response.ok || result?.success === false) {
+          throw new Error(result?.message || result?.error || `Request failed with status ${response.status}`);
+        }
+      } catch (error) {
+        setReviewSubmissionError(`Unable to submit final documents: ${error.message}`);
+        return;
+      } finally {
+        setSavingReviewSubmission(false);
+      }
     }
 
     setSavedStepIndex(activeStep);
@@ -859,6 +916,7 @@ function SchemeProposalWizard() {
             setDocumentsEmploymentError("");
             setTechExitDeclarationError("");
             setInstallmentError("");
+            setReviewSubmissionError("");
           }}
           onSubmit={saveAndGoToNextStep}
         >
@@ -890,6 +948,11 @@ function SchemeProposalWizard() {
           {installmentError && activeStep === proposalSteps.findIndex((step) => step.id === "installment") && (
             <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>
               {installmentError}
+            </Typography>
+          )}
+          {reviewSubmissionError && activeStep === proposalSteps.findIndex((step) => step.id === "reviewSubmission") && (
+            <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>
+              {reviewSubmissionError}
             </Typography>
           )}
           <ActiveStepForm schemeId={schemeId} />
@@ -941,8 +1004,18 @@ function SchemeProposalWizard() {
                 )}
               </Box>
             ) : (
-              <Button type="button" variant="contained" disabled sx={{ textTransform: "none" }}>
-                Submit
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={savingReviewSubmission}
+                sx={{
+                  textTransform: "none",
+                  bgcolor: "#009b43",
+                  fontWeight: 700,
+                  "&:hover": { bgcolor: "#087f3d" }
+                }}
+              >
+                {savingReviewSubmission ? "Submitting..." : "Submit"}
               </Button>
             )}
           </Box>

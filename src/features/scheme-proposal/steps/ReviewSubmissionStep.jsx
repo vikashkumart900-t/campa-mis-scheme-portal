@@ -1,46 +1,24 @@
 import { useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography, FormHelperText } from "@mui/material";
 import { Download, Eye, FileText, Info } from "lucide-react";
+import { useFormContext } from "react-hook-form";
 import { apiUrls } from "../../../api/urls";
 
-const uploadBoxSx = {
-  display: "flex",
-  alignItems: "center",
-  minHeight: 42,
-  overflow: "hidden",
-  border: "1px solid #d7dfe6",
-  borderRadius: 1,
-  background: "#fff",
-  width: "100%",
-  maxWidth: 780,
-  boxSizing: "border-box"
-};
-
-const uploadButtonSx = {
-  height: 42,
-  px: 1.75,
-  borderRadius: 0,
-  borderRight: "1px solid #d7dfe6",
-  background: "#f2f5f8",
-  color: "#24374d",
-  fontSize: 12,
-  fontWeight: 500,
-  textTransform: "none",
-  minWidth: 104,
-  whiteSpace: "nowrap",
-  '&:hover': { background: "#eceff3" }
-};
-
-function FileUploadRow({ label, optional = false, info = false, onFileChange }) {
-  const [fileName, setFileName] = useState("");
-  const inputId = `${label.toLowerCase().replace(/\s+/g, "-")}-upload`;
+function FileUploadRow({ label, fieldName, optional = false, info = false, error }) {
+  const { register, watch } = useFormContext();
+  const inputId = `${fieldName}-upload`;
+  const fileList = watch(fieldName);
+  const fileName = fileList?.[0]?.name || "";
 
   return (
     <Box sx={{ mb: 2.5 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-        <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#344457", textTransform: "uppercase", letterSpacing: "0.01em" }}>{label}</Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
+        <Typography component="label" htmlFor={inputId} sx={{ fontSize: 10, fontWeight: 700, color: "#344457", textTransform: "uppercase" }}>
+          {label}
+          {!optional && <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>}
+        </Typography>
         {optional ? (
-          <Typography component="span" sx={{ fontSize: 12, color: "#4d5764" }}>(optional)</Typography>
+          <Typography component="span" sx={{ fontSize: 10, color: "#4d5764" }}>(optional)</Typography>
         ) : null}
         {info ? (
           <Box
@@ -58,7 +36,6 @@ function FileUploadRow({ label, optional = false, info = false, onFileChange }) 
               color: "#fff",
               display: "grid",
               placeItems: "center",
-              ml: 0.5,
               cursor: "help"
             }}
           >
@@ -67,35 +44,57 @@ function FileUploadRow({ label, optional = false, info = false, onFileChange }) 
         ) : null}
       </Box>
 
-      <Box sx={uploadBoxSx}>
-        <Button component="label" htmlFor={inputId} sx={uploadButtonSx}>
+      <Box
+        sx={{
+          display: "flex",
+          minHeight: 34,
+          alignItems: "center",
+          overflow: "hidden",
+          border: `1px solid ${error ? "#d32f2f" : "#cfd7e2"}`,
+          borderRadius: 1,
+          bgcolor: "#fff"
+        }}
+      >
+        <Button
+          component="label"
+          htmlFor={inputId}
+          sx={{
+            height: 34,
+            px: 1.5,
+            borderRight: `1px solid ${error ? "#d32f2f" : "#cfd7e2"}`,
+            borderRadius: 0,
+            color: "#132e4c",
+            bgcolor: "#f1f4f8",
+            fontSize: 11,
+            textTransform: "none",
+            whiteSpace: "nowrap"
+          }}
+        >
           Choose File
           <input
             id={inputId}
             type="file"
             hidden
-            onChange={(event) => {
-              const selectedFile = event.target.files?.[0];
-              const nextName = selectedFile ? selectedFile.name : "";
-              setFileName(nextName);
-              onFileChange?.(selectedFile);
-            }}
+            {...register(fieldName, {
+              required: !optional ? `${label} is required.` : false
+            })}
           />
         </Button>
         <Typography
-          sx={{
-            px: 1.5,
-            color: "#4d5b6b",
-            fontSize: 14,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis"
-          }}
           aria-live="polite"
+          sx={{
+            overflow: "hidden",
+            px: 1.25,
+            color: "#344457",
+            fontSize: 11,
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+          }}
         >
           {fileName || "No file chosen"}
         </Typography>
       </Box>
+      {error && <FormHelperText error>{error.message}</FormHelperText>}
     </Box>
   );
 }
@@ -103,6 +102,8 @@ function FileUploadRow({ label, optional = false, info = false, onFileChange }) 
 function ReviewSubmissionStep({ schemeId }) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  
+  const { formState: { errors } } = useFormContext();
 
   const fetchPdf = async () => {
     const selectedSchemeId = Number(schemeId);
@@ -315,8 +316,19 @@ function ReviewSubmissionStep({ schemeId }) {
           gap: 2
         }}
       >
-        <FileUploadRow label="Upload Signature" info onFileChange={() => {}} />
-        <FileUploadRow label="Upload Supporting Document" optional info onFileChange={() => {}} />
+        <FileUploadRow
+          label="Upload Signature"
+          fieldName="signatureFile"
+          info
+          error={errors.signatureFile}
+        />
+        <FileUploadRow
+          label="Upload Supporting Document"
+          fieldName="supportingDocument"
+          optional
+          info
+          error={errors.supportingDocument}
+        />
       </Box>
     </Box>
   );
