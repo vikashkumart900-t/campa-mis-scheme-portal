@@ -168,7 +168,7 @@ function DeliverableRow({ item, index, register, getValues, dateOfProposal, expe
 
   return (
     <TableRow>
-      <TableCell sx={{ ...tableCellSx, width: 42, textAlign: "center", fontSize: 11 }}>{index + 1}</TableCell>
+      <TableCell sx={{ ...tableCellSx, width: 42, textAlign: "center", fontSize: 11, minWidth: 42 }}>{index + 1}</TableCell>
       <TableCell sx={{ ...tableCellSx, minWidth: 240 }}>
         <TextField
           placeholder="Enter deliverable"
@@ -180,7 +180,7 @@ function DeliverableRow({ item, index, register, getValues, dateOfProposal, expe
           {...register(`${baseName}.description`, { required: "Deliverable is required." })}
         />
       </TableCell>
-      <TableCell sx={{ ...tableCellSx, width: 80 }}>
+      <TableCell sx={{ ...tableCellSx, minWidth: 80, width: "auto" }}>
         <TextField
           placeholder="Enter unit"
           fullWidth
@@ -191,7 +191,7 @@ function DeliverableRow({ item, index, register, getValues, dateOfProposal, expe
           {...register(`${baseName}.unit`, { required: "Unit is required." })}
         />
       </TableCell>
-      <TableCell sx={{ ...tableCellSx, width: 112 }}>
+      <TableCell sx={{ ...tableCellSx, minWidth: 112 }}>
         <TextField
           type="date"
           fullWidth
@@ -203,7 +203,7 @@ function DeliverableRow({ item, index, register, getValues, dateOfProposal, expe
           {...register(`${baseName}.initiationDate`, dateRules(`${baseName}.closingDate`, "Initiation date"))}
         />
       </TableCell>
-      <TableCell sx={{ ...tableCellSx, width: 112 }}>
+      <TableCell sx={{ ...tableCellSx, minWidth: 112 }}>
         <TextField
           type="date"
           fullWidth
@@ -215,7 +215,7 @@ function DeliverableRow({ item, index, register, getValues, dateOfProposal, expe
           {...register(`${baseName}.closingDate`, dateRules(`${baseName}.initiationDate`, "Closing date"))}
         />
       </TableCell>
-      <TableCell sx={{ ...tableCellSx, width: 92 }}>
+      <TableCell sx={{ ...tableCellSx, minWidth: 92 }}>
         <TextField
           type="number"
           placeholder="Enter amount"
@@ -232,10 +232,10 @@ function DeliverableRow({ item, index, register, getValues, dateOfProposal, expe
           })}
         />
       </TableCell>
-      <TableCell sx={{ ...tableCellSx, width: 120 }}>
+      <TableCell sx={{ ...tableCellSx, minWidth: 120 }}>
         <TextField placeholder="Enter remarks" fullWidth size="small" sx={inputSx} {...register(`${baseName}.remarks`)} />
       </TableCell>
-      <TableCell sx={{ ...tableCellSx, width: 128 }}>
+      <TableCell sx={{ ...tableCellSx, minWidth: 128 }}>
         <Button
           component="label"
           variant="outlined"
@@ -256,7 +256,7 @@ function DeliverableRow({ item, index, register, getValues, dateOfProposal, expe
           <input type="file" hidden {...register(`${baseName}.attachment`)} />
         </Button>
       </TableCell>
-      <TableCell sx={{ ...tableCellSx, width: 76, borderRight: 0 }}>
+      <TableCell sx={{ ...tableCellSx, minWidth: 76, borderRight: 0 }}>
         <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
           <IconButton
             type="button"
@@ -554,8 +554,8 @@ function DeliverablesStep() {
       {uploadError && <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>{uploadError}</Typography>}
       {uploadStatus && <Typography role="status" sx={{ mb: 1, color: "#087638", fontSize: 12 }}>{uploadStatus}</Typography>}
 
-      <TableContainer sx={{ mb: 2.5, border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff" }}>
-        <Table size="small" aria-label="Deliverables">
+      <TableContainer sx={{ mb: 2.5, border: "1px solid #e0e4ea", borderRadius: 1, bgcolor: "#fff", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        <Table size="small" aria-label="Deliverables" sx={{ minWidth: 1200 }}>
           <TableHead>
             <TableRow>
               {["S. No.", "Deliverables *", "Unit *", "Initiation Date *", "Closing Date *", "Financial Outlay (Rs) *", "Remarks", "Upload (if any)", "Actions"].map((heading) => (
