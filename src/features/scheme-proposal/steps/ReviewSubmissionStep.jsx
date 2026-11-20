@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { Download, Eye, FileText, Info } from "lucide-react";
-import proposalPdf from "../../../assets/Revised guidelines for proposing schemes (29.12.2025).pdf";
+import { apiUrls } from "../../../api/urls";
 
 const uploadBoxSx = {
   display: "flex",
@@ -100,7 +100,79 @@ function FileUploadRow({ label, optional = false, info = false, onFileChange }) 
   );
 }
 
-function ReviewSubmissionStep() {
+function ReviewSubmissionStep({ schemeId }) {
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+
+  const fetchPdf = async () => {
+    const selectedSchemeId = Number(schemeId);
+    if (!Number.isSafeInteger(selectedSchemeId) || selectedSchemeId <= 0) {
+      throw new Error("The selected scheme is missing a valid scheme ID.");
+    }
+
+    const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+    if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+      throw new Error("Your session is missing an access token. Please sign in again.");
+    }
+
+    const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+    const response = await fetch(apiUrls.misGeneratePdf(selectedSchemeId), {
+      headers: { Authorization: authorization }
+    });
+
+    if (!response.ok) {
+      const responseText = await response.text();
+      throw new Error(responseText || `Unable to generate PDF (status ${response.status}).`);
+    }
+
+    const blob = await response.blob();
+    if (!blob.size) {
+      throw new Error("The PDF service returned an empty file.");
+    }
+    return blob;
+  };
+
+  const openPdfPreview = async () => {
+    setPdfError("");
+    setPdfLoading(true);
+    let previewWindow = null;
+    try {
+      previewWindow = window.open("", "_blank");
+      if (!previewWindow) {
+        throw new Error("Your browser blocked the PDF preview window. Please allow pop-ups and try again.");
+      }
+      const blob = await fetchPdf();
+      const objectUrl = URL.createObjectURL(blob);
+      previewWindow.location.href = objectUrl;
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close();
+      setPdfError(error.message);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const downloadPdf = async () => {
+    setPdfError("");
+    setPdfLoading(true);
+    try {
+      const blob = await fetchPdf();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = "Proposal_DPR_Preview.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      setPdfError(error.message);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   return (
     <Box sx={{ width: "100%" }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5, pb: 1.5, borderBottom: "1px solid #ecdfb8" }}>
@@ -185,10 +257,9 @@ function ReviewSubmissionStep() {
 
           <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
             <Button
-              component="a"
-              href={proposalPdf}
-              target="_blank"
-              rel="noreferrer"
+              type="button"
+              onClick={openPdfPreview}
+              disabled={pdfLoading}
               startIcon={<Eye size={14} />}
               sx={{
                 flex: 1,
@@ -205,12 +276,12 @@ function ReviewSubmissionStep() {
                 "&:hover": { border: "1.5px solid #195d51", background: "#f4faf8" }
               }}
             >
-              Open PDF Preview
+              {pdfLoading ? "Loading PDF..." : "Open PDF Preview"}
             </Button>
             <Button
-              component="a"
-              href={proposalPdf}
-              download="Proposal_DPR_Preview.pdf"
+              type="button"
+              onClick={downloadPdf}
+              disabled={pdfLoading}
               startIcon={<Download size={14} />}
               sx={{
                 flex: 1,
@@ -229,6 +300,11 @@ function ReviewSubmissionStep() {
               Download PDF
             </Button>
           </Box>
+          {pdfError ? (
+            <Typography role="alert" sx={{ mt: 1, fontSize: 11, color: "error.main" }}>
+              {pdfError}
+            </Typography>
+          ) : null}
         </Box>
       </Box>
 

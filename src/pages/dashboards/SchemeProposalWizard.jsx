@@ -892,7 +892,7 @@ function SchemeProposalWizard() {
               {installmentError}
             </Typography>
           )}
-          <ActiveStepForm />
+          <ActiveStepForm schemeId={schemeId} />
           {savedStepIndex !== null && activeStep === savedStepIndex + 1 && (
             <Typography role="status" sx={{ mt: 1, color: "#087638", fontSize: 12 }}>
               {proposalSteps[savedStepIndex].id === "objectivesFunding"

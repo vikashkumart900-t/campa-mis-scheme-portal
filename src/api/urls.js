@@ -16,6 +16,7 @@ export const apiUrls = {
   misDocumentDetails: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/document-details`,
   misTechExit: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/tech-exit`,
   misBankDetails: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/bank-details`,
+  misGeneratePdf: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/generate-pdf`,
   register: `${campaApiBaseUrl}/register`,
   forgotPassword: `${campaApiBaseUrl}/forgot-password`,
   verifyResetOtp: `${campaApiBaseUrl}/verify-reset-otp`,
