@@ -67,16 +67,15 @@ function IADashboard({ children, pageTitle = "Dashboard" }) {
           <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><DashboardOutlinedIcon fontSize="small" /></ListItemIcon>
           <ListItemText primary="Dashboard" slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }} />
         </ListItemButton>
-        {/* <Typography sx={{ px: 1, pt: 2, pb: 1, color: "#bfd5c7", fontSize: 13, fontWeight: 700 }}>
-          Scheme Management
-        </Typography> */}
         <ListItemButton
-          component="div"
-          disableRipple
-          sx={{ mb: 0.5, borderRadius: 1, color: "#e4efe7" }}
+          component={RouterLink}
+          to={`/dashboard/implementingAgency${dashboardQuerySuffix}`}
+          selected={!isNewProposalPage}
+          onClick={() => setMobileNavOpen(false)}
+          sx={{ mb: 0.5, borderRadius: 1, color: "#e4efe7", "&.Mui-selected": { bgcolor: "#286347", color: "#fff" }, "&.Mui-selected:hover": { bgcolor: "#286347" } }}
         >
           <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><AssignmentOutlinedIcon fontSize="small" /></ListItemIcon>
-          <ListItemText primary="My Proposals (DPR)" slotProps={{ primary: { sx: { fontSize: 11, fontWeight: 600 } } }} />
+          <ListItemText primary="My Proposals" slotProps={{ primary: { sx: { fontSize: 11, fontWeight: 600 } } }} />
         </ListItemButton>
         <ListItemButton
           component={RouterLink}

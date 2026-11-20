@@ -8,3 +8,4 @@ export { default as RadioGroup } from "./RadioGroup";
 export { default as Carousel } from "./Carousel";
 export { default as ChartPanel } from "./ChartPanel";
 export { default as PwaPrompt } from "./PwaPrompt";
+export { default as SuccessModal } from "./SuccessModal";

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
   Typography
 } from "@mui/material";
+import { SuccessModal } from "../../components/ui";
 import BasicInfoStep from "../../features/scheme-proposal/steps/BasicInfoStep";
 import ObjectivesFundingStep from "../../features/scheme-proposal/steps/ObjectivesFundingStep";
 import DeliverablesStep from "../../features/scheme-proposal/steps/DeliverablesStep";
@@ -29,9 +30,12 @@ const laterStepComponents = [
 
 function SchemeProposalWizard() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const schemeId = searchParams.get("schemeId");
+  const scope = searchParams.get("scope");
   const [activeStep, setActiveStep] = useState(0);
   const [savedStepIndex, setSavedStepIndex] = useState(null);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [savingReviewSubmission, setSavingReviewSubmission] = useState(false);
   const [reviewSubmissionError, setReviewSubmissionError] = useState("");
   const formMethods = useForm({
@@ -792,6 +796,9 @@ function SchemeProposalWizard() {
         if (!response.ok || result?.success === false) {
           throw new Error(result?.message || result?.error || `Request failed with status ${response.status}`);
         }
+
+        // Show success message and redirect with preserved query parameters
+        setSubmissionSuccess(true);
       } catch (error) {
         setReviewSubmissionError(`Unable to submit final documents: ${error.message}`);
         return;
@@ -802,6 +809,13 @@ function SchemeProposalWizard() {
 
     setSavedStepIndex(activeStep);
     setActiveStep((currentStep) => Math.min(currentStep + 1, proposalSteps.length - 1));
+  };
+
+  const handleSuccessModalClose = () => {
+    const redirectUrl = scope && schemeId 
+      ? `/dashboard/implementingAgency?scope=${scope}&schemeId=${schemeId}`
+      : "/dashboard/implementingAgency";
+    navigate(redirectUrl);
   };
 
   return (
@@ -1022,6 +1036,14 @@ function SchemeProposalWizard() {
         </Box>
       )}
       </Box>
+
+      {/* Success Modal */}
+      <SuccessModal
+        open={submissionSuccess}
+        title="Submitted successfully"
+        onClose={handleSuccessModalClose}
+        buttonText="OK"
+      />
     </FormProvider>
   );
 }
