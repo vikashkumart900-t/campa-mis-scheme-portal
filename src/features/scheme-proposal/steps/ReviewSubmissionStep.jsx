@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Box, Button, Typography, FormHelperText } from "@mui/material";
 import { Download, Eye, FileText, Info } from "lucide-react";
 import { useFormContext } from "react-hook-form";
-import { apiUrls } from "../../../api/urls";
+import { fetchProposalPdf, openProposalPdfPreview } from "../../../api/proposalPdf";
 
 function FileUploadRow({ label, fieldName, optional = false, info = false, error }) {
   const { register, watch } = useFormContext();
@@ -105,49 +105,12 @@ function ReviewSubmissionStep({ schemeId }) {
   
   const { formState: { errors } } = useFormContext();
 
-  const fetchPdf = async () => {
-    const selectedSchemeId = Number(schemeId);
-    if (!Number.isSafeInteger(selectedSchemeId) || selectedSchemeId <= 0) {
-      throw new Error("The selected scheme is missing a valid scheme ID.");
-    }
-
-    const accessToken = sessionStorage.getItem("campaJwt")?.trim();
-    if (!accessToken || accessToken.toLowerCase() === "authenticated") {
-      throw new Error("Your session is missing an access token. Please sign in again.");
-    }
-
-    const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
-    const response = await fetch(apiUrls.misGeneratePdf(selectedSchemeId), {
-      headers: { Authorization: authorization }
-    });
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      throw new Error(responseText || `Unable to generate PDF (status ${response.status}).`);
-    }
-
-    const blob = await response.blob();
-    if (!blob.size) {
-      throw new Error("The PDF service returned an empty file.");
-    }
-    return blob;
-  };
-
   const openPdfPreview = async () => {
     setPdfError("");
     setPdfLoading(true);
-    let previewWindow = null;
     try {
-      previewWindow = window.open("", "_blank");
-      if (!previewWindow) {
-        throw new Error("Your browser blocked the PDF preview window. Please allow pop-ups and try again.");
-      }
-      const blob = await fetchPdf();
-      const objectUrl = URL.createObjectURL(blob);
-      previewWindow.location.href = objectUrl;
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      await openProposalPdfPreview(schemeId);
     } catch (error) {
-      if (previewWindow && !previewWindow.closed) previewWindow.close();
       setPdfError(error.message);
     } finally {
       setPdfLoading(false);
@@ -158,7 +121,7 @@ function ReviewSubmissionStep({ schemeId }) {
     setPdfError("");
     setPdfLoading(true);
     try {
-      const blob = await fetchPdf();
+      const blob = await fetchProposalPdf(schemeId);
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = objectUrl;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   AppBar,
+  Alert,
   Avatar,
   Box,
   Button,
@@ -42,6 +43,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { apiUrls } from "../../api/urls";
+import { openProposalPdfPreview } from "../../api/proposalPdf";
 
 const drawerWidth = 256;
 
@@ -64,6 +66,8 @@ function MyProposalsTable() {
   const [proposalsData, setProposalsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
   const [selectedStatusProposal, setSelectedStatusProposal] = useState(null);
   const navigate = useNavigate();
@@ -145,13 +149,24 @@ function MyProposalsTable() {
   };
 
   const handleEditProposal = () => {
-    navigate(`/dashboard/implementingAgency/edit/${selectedProposal.schemeId}`);
+    const proposalParams = new URLSearchParams(searchParams);
+    proposalParams.set("schemeId", String(selectedProposal.schemeId));
+    navigate(`/dashboard/implementingAgency/new-proposal?${proposalParams.toString()}`);
     handleMenuClose();
   };
 
-  const handleViewProposal = () => {
-    navigate(`/dashboard/implementingAgency/view/${selectedProposal.schemeId}`);
+  const handleViewProposal = async () => {
+    const selectedSchemeId = selectedProposal.schemeId;
     handleMenuClose();
+    setPdfError("");
+    setPdfLoading(true);
+    try {
+      await openProposalPdfPreview(selectedSchemeId);
+    } catch (err) {
+      setPdfError(err.message);
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   const handleViewStatus = (proposal) => {
@@ -179,6 +194,8 @@ function MyProposalsTable() {
             My Proposals ({proposalsData.length})
           </Typography>
         </Stack>
+
+        {pdfError && <Alert severity="error" role="alert">{pdfError}</Alert>}
 
         <TextField
           placeholder="Search by scheme name or proposal ID..."
@@ -288,6 +305,7 @@ function MyProposalsTable() {
                   <TableCell align="center" sx={{ py: 2.5, px: 2.5 }}>
                     <IconButton
                       size="small"
+                      disabled={pdfLoading}
                       onClick={(e) => handleMenuOpen(e, proposal)}
                       sx={{ color: "#46564e" }}
                     >
