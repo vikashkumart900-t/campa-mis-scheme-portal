@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import {
   Box,
+  Button,
   IconButton,
   MenuItem,
   Paper,
@@ -13,7 +15,9 @@ import {
   Typography
 } from "@mui/material";
 import { Info, Plus, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { Controller, useFieldArray, useFormContext } from "react-hook-form";
+import { apiUrls } from "../../../api/urls";
 import { getFinancialYears } from "../utils/financialYears";
 
 const sectionSx = {
@@ -88,31 +92,184 @@ function fileListMessage(fileList) {
   return Array.from(fileList || []).map((file) => file.name).join(", ") || "No file chosen";
 }
 
+function DocumentFilePicker({ accept, registration, fileName, error }) {
+  return (
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          minWidth: 0,
+          height: 32,
+          overflow: "hidden",
+          border: "1px solid",
+          borderColor: error ? "error.main" : "#dce2e8",
+          borderRadius: 1,
+          bgcolor: "#fff"
+        }}
+      >
+        <Button
+          component="label"
+          sx={{
+            flexShrink: 0,
+            minWidth: 0,
+            px: 1.25,
+            borderRight: "1px solid #dce2e8",
+            borderRadius: 0,
+            bgcolor: "#f5f7fa",
+            color: "#344457",
+            fontSize: 11,
+            textTransform: "none",
+            "&:hover": { bgcolor: "#edf0f4" }
+          }}
+        >
+          Choose File
+          <input type="file" hidden accept={accept} {...registration} />
+        </Button>
+        <Typography
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            minWidth: 0,
+            px: 1,
+            color: fileName ? "#132e4c" : "#667085",
+            fontSize: 11,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+          }}
+          title={fileName || "No file chosen"}
+        >
+          {fileName || "No file chosen"}
+        </Typography>
+      </Box>
+      {error && <Typography role="alert" sx={{ mt: 0.25, color: "error.main", fontSize: 10 }}>{error.message}</Typography>}
+    </Box>
+  );
+}
+
 function DocumentsEmploymentStep() {
+  const [searchParams] = useSearchParams();
   const {
     control,
     getValues,
     register,
+    setValue,
     watch,
     setError,
     clearErrors,
     formState: { errors }
   } = useFormContext();
+  const [documentLoading, setDocumentLoading] = useState(true);
+  const [documentError, setDocumentError] = useState("");
+  const {
+    fields: employmentRows,
+    append: appendEmployment,
+    remove: removeEmployment,
+    replace: replaceEmployment
+  } = useFieldArray({ control, name: "documentsEmployment.employmentRows" });
   const {
     fields: kmlFields,
     append: appendKml,
-    remove: removeKml
+    remove: removeKml,
+    replace: replaceKml
   } = useFieldArray({ control, name: "documentsEmployment.kmlFiles" });
   const {
     fields: imageGalleryFields,
     append: appendImageGallery,
-    remove: removeImageGallery
+    remove: removeImageGallery,
+    replace: replaceImageGallery
   } = useFieldArray({ control, name: "documentsEmployment.imageGallery" });
-  const {
-    fields: employmentRows,
-    append: appendEmployment,
-    remove: removeEmployment
-  } = useFieldArray({ control, name: "documentsEmployment.employmentRows" });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const schemeId = searchParams.get("schemeId");
+    const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+
+    if (!schemeId || schemeId === "authenticated") {
+      setDocumentLoading(false);
+      return;
+    }
+
+    if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+      setDocumentLoading(false);
+      return;
+    }
+
+    const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+
+    fetch(apiUrls.documentDetails(schemeId), {
+      signal: controller.signal,
+      headers: { Authorization: authorization }
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error((await response.text()) || `Request failed with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Document Details API Response:", data);
+
+        if (data) {
+          // Set capacity building program details
+          if (data.capacityBuildingDetails) {
+            setValue("documentsEmployment.capacityProgramDetails", data.capacityBuildingDetails, { shouldDirty: false });
+          }
+
+          // Set documents (KML and Image files)
+          if (data.documents && Array.isArray(data.documents)) {
+            const kmlDocs = data.documents.filter((doc) => doc.documentType === "KML");
+            const imageDocs = data.documents.filter((doc) => doc.documentType === "IMAGE");
+
+            // Restore saved document metadata; browsers do not allow restoring file inputs.
+            if (kmlDocs.length > 0) {
+              replaceKml(kmlDocs.map((doc) => ({
+                description: doc.description || "",
+                file: null,
+                uploadedFileName: doc.fileName || ""
+              })));
+            }
+
+            if (imageDocs.length > 0) {
+              replaceImageGallery(imageDocs.map((doc) => ({
+                description: doc.description || "",
+                files: null,
+                uploadedFileName: doc.fileName || ""
+              })));
+            }
+          }
+
+          // Set employment rows data
+          if (Array.isArray(data.employmentDetails)) {
+            replaceEmployment(data.employmentDetails.map((emp) => ({
+              financialYear: emp.financialYear || "",
+              laborCost: emp.labourCost != null && emp.labourCost !== "" ? Number(emp.labourCost) : "",
+              mandays: emp.mandaysGenerated != null && emp.mandaysGenerated !== "" ? Number(emp.mandaysGenerated) : "",
+              tribals: emp.tribals != null && emp.tribals !== "" ? Number(emp.tribals) : "",
+              forestDwellers: emp.forestDwellersBenefitted != null && emp.forestDwellersBenefitted !== ""
+                ? Number(emp.forestDwellersBenefitted)
+                : ""
+            })));
+          }
+
+          setDocumentError("");
+        }
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching document details:", error);
+          setDocumentError(`Unable to load document details: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setDocumentLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [searchParams, setValue, replaceEmployment, replaceKml, replaceImageGallery]);
+
   const documentErrors = errors.documentsEmployment || {};
   const kmlFileValues = watch("documentsEmployment.kmlFiles") || [];
   const imageGalleryValues = watch("documentsEmployment.imageGallery") || [];
@@ -195,7 +352,8 @@ function DocumentsEmploymentStep() {
             const rowError = documentErrors.kmlFiles?.[index];
             const fileRegistration = register(`${baseName}.file`, {
               validate: (files) => {
-                if (!files?.length) return "A KML or KMZ file is required.";
+                if (!files?.length && !getValues(`${baseName}.uploadedFileName`)) return "A KML or KMZ file is required.";
+                if (!files?.length) return true;
                 const file = files[0];
                 if (!/\.(kml|kmz)$/i.test(file.name)) return "Choose a KML or KMZ file.";
                 if (file.size > 20 * 1024 * 1024) return "File must be 20 MB or smaller.";
@@ -226,20 +384,18 @@ function DocumentsEmploymentStep() {
                   helperText={rowError?.description?.message}
                   {...register(`${baseName}.description`, { required: "Description is required." })}
                 />
-                <Box>
-                  <TextField
-                    type="file"
-                    fullWidth
-                    size="small"
-                    sx={inputSx}
-                    slotProps={{ htmlInput: { accept: ".kml,.kmz" } }}
-                    error={Boolean(rowError?.file)}
-                    {...fileRegistration}
-                  />
-                  {rowError?.file && <Typography role="alert" sx={{ mt: 0.25, color: "error.main", fontSize: 10 }}>{rowError.file.message}</Typography>}
-                </Box>
+                <DocumentFilePicker
+                  accept=".kml,.kmz"
+                  registration={fileRegistration}
+                  fileName={kmlFileValues[index]?.file?.length
+                    ? fileListMessage(kmlFileValues[index].file)
+                    : kmlFileValues[index]?.uploadedFileName}
+                  error={rowError?.file}
+                />
                 <Typography sx={{ pt: 1, color: "#667085", fontSize: 11, overflowWrap: "anywhere" }}>
-                  {fileListMessage(kmlFileValues[index]?.file)}
+                  {kmlFileValues[index]?.file?.length
+                    ? fileListMessage(kmlFileValues[index].file)
+                    : kmlFileValues[index]?.uploadedFileName || "No file chosen"}
                 </Typography>
                 <IconButton
                   type="button"
@@ -281,7 +437,8 @@ function DocumentsEmploymentStep() {
             const rowError = documentErrors.imageGallery?.[index];
             const fileRegistration = register(`${baseName}.files`, {
               validate: (files) => {
-                if (!files?.length) return "Select an image for this row.";
+                if (!files?.length && !getValues(`${baseName}.uploadedFileName`)) return "Select an image for this row.";
+                if (!files?.length) return true;
                 const selectedFiles = Array.from(files);
                 if (!selectedFiles.every((file) => /\.(jpe?g|png)$/i.test(file.name))) {
                   return "Only JPG, JPEG, or PNG images are allowed.";
@@ -314,20 +471,18 @@ function DocumentsEmploymentStep() {
                   helperText={rowError?.description?.message}
                   {...register(`${baseName}.description`, { required: "Description is required." })}
                 />
-                <Box>
-                  <TextField
-                    type="file"
-                    fullWidth
-                    size="small"
-                    sx={inputSx}
-                    slotProps={{ htmlInput: { accept: ".jpg,.jpeg,.png" } }}
-                    error={Boolean(rowError?.files)}
-                    {...fileRegistration}
-                  />
-                  {rowError?.files && <Typography role="alert" sx={{ mt: 0.25, color: "error.main", fontSize: 10 }}>{rowError.files.message}</Typography>}
-                </Box>
+                <DocumentFilePicker
+                  accept=".jpg,.jpeg,.png"
+                  registration={fileRegistration}
+                  fileName={imageGalleryValues[index]?.files?.length
+                    ? fileListMessage(imageGalleryValues[index].files)
+                    : imageGalleryValues[index]?.uploadedFileName}
+                  error={rowError?.files}
+                />
                 <Typography sx={{ pt: 1, color: "#667085", fontSize: 11, overflowWrap: "anywhere" }}>
-                  {fileListMessage(imageGalleryValues[index]?.files)}
+                  {imageGalleryValues[index]?.files?.length
+                    ? fileListMessage(imageGalleryValues[index].files)
+                    : imageGalleryValues[index]?.uploadedFileName || "No file chosen"}
                 </Typography>
                 <IconButton
                   type="button"

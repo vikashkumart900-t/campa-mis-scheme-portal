@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -12,7 +12,9 @@ import {
   Typography
 } from "@mui/material";
 import { Info, Plus, Sparkles, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useFieldArray, useFormContext } from "react-hook-form";
+import { apiUrls } from "../../../api/urls";
 
 const sectionSx = {
   mb: 1.5,
@@ -281,6 +283,7 @@ function EvaluationDetailFields({ name, label }) {
 }
 
 function EvaluationResearchStep() {
+  const [searchParams] = useSearchParams();
   const {
     register,
     getValues,
@@ -290,10 +293,104 @@ function EvaluationResearchStep() {
     formState: { errors }
   } = useFormContext();
   const [summaryStatus, setSummaryStatus] = useState("");
+  const [evaluationLoading, setEvaluationLoading] = useState(true);
+  const [evaluationError, setEvaluationError] = useState("");
   const researchAspects = watch("evaluationResearch.researchAspects") || "";
   const monitoringAnnually = watch("evaluationResearch.monitoringAnnually");
   const midtermEvaluation = watch("evaluationResearch.midtermEvaluation");
   const researchError = errors?.evaluationResearch?.researchAspects;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const schemeId = searchParams.get("schemeId");
+    const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+
+    if (!schemeId || schemeId === "authenticated") {
+      setEvaluationLoading(false);
+      return;
+    }
+
+    if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+      setEvaluationLoading(false);
+      return;
+    }
+
+    const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+
+    fetch(apiUrls.evaluationResearch(schemeId), {
+      signal: controller.signal,
+      headers: { Authorization: authorization }
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error((await response.text()) || `Request failed with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Evaluation Research API Response:", data);
+
+        if (data) {
+          // Set evaluation type (ANNUAL or MIDTERM)
+          if (data.evaluationType) {
+            if (data.evaluationType === "ANNUAL") {
+              setValue("evaluationResearch.monitoringAnnually", "yes", { shouldDirty: false });
+              setValue("evaluationResearch.midtermEvaluation", "", { shouldDirty: false });
+            } else if (data.evaluationType === "MIDTERM") {
+              setValue("evaluationResearch.midtermEvaluation", "yes", { shouldDirty: false });
+              setValue("evaluationResearch.monitoringAnnually", "", { shouldDirty: false });
+            }
+          }
+
+          // Set evaluation details
+          if (data.evaluationDetails && Array.isArray(data.evaluationDetails)) {
+            const detailsFieldName = data.evaluationType === "ANNUAL" 
+              ? "evaluationResearch.monitoringAnnuallyItems"
+              : "evaluationResearch.midtermEvaluationItems";
+            
+            const formattedDetails = data.evaluationDetails.map((detail) => ({
+              details: detail || "",
+              attachment: data.documentFileName ? [{ name: data.documentFileName, path: data.documentFileName }] : []
+            }));
+
+            // We need to use the fieldArray replace function, but we don't have access to it here
+            // So we'll set them individually
+            formattedDetails.forEach((detail, index) => {
+              setValue(`${detailsFieldName}.${index}.details`, detail.details, { shouldDirty: false });
+              if (detail.attachment.length > 0) {
+                setValue(`${detailsFieldName}.${index}.attachment`, detail.attachment, { shouldDirty: false });
+              }
+            });
+          }
+
+          // Set research aspects
+          if (data.researchAspects) {
+            setValue("evaluationResearch.researchAspects", data.researchAspects, { shouldDirty: false });
+          }
+
+          // Set research highlights/unique highlights
+          if (data.uniqueHighlights) {
+            setValue("evaluationResearch.researchHighlights", data.uniqueHighlights, { shouldDirty: false });
+          }
+
+          setEvaluationError("");
+        }
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching evaluation research:", error);
+          setEvaluationError(`Unable to load evaluation research: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setEvaluationLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [searchParams, setValue]);
+
   const validateEvaluationSelection = () => (
     getValues("evaluationResearch.monitoringAnnually") === "yes"
       || getValues("evaluationResearch.midtermEvaluation") === "yes"

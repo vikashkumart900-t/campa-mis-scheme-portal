@@ -13,6 +13,7 @@ import {
   Typography
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { apiUrls } from "../../../api/urls";
 
@@ -270,6 +271,7 @@ function StateDistrictRow({
 }
 
 function BasicInfoStep() {
+  const [searchParams] = useSearchParams();
   const {
     control,
     register,
@@ -287,6 +289,9 @@ function BasicInfoStep() {
   const [states, setStates] = useState([]);
   const [statesLoading, setStatesLoading] = useState(true);
   const [statesError, setStatesError] = useState("");
+  const [nodalOfficerLoading, setNodalOfficerLoading] = useState(true);
+  const [nodalOfficerError, setNodalOfficerError] = useState("");
+  const [basicInfoData, setBasicInfoData] = useState(null);
 
   const getFieldProps = (name, rules = {}) => {
     const fieldError = errors[name];
@@ -304,6 +309,97 @@ function BasicInfoStep() {
       { shouldDirty: true }
     );
   }, [dateOfProposal, expectedCompletionDate, setValue]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const schemeId = searchParams.get("schemeId");
+    const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+
+    if (!schemeId) {
+      setNodalOfficerError("Scheme ID is required to load nodal officer details.");
+      setNodalOfficerLoading(false);
+      return;
+    }
+
+    if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+      setNodalOfficerError("Authentication required to load nodal officer details.");
+      setNodalOfficerLoading(false);
+      return;
+    }
+
+    const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+
+    fetch(apiUrls.basicInfo(schemeId), {
+      signal: controller.signal,
+      headers: { Authorization: authorization }
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error((await response.text()) || `Request failed with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((basicInfoResponse) => {
+        console.log("API Response:", basicInfoResponse);
+
+        let responseData = basicInfoResponse;
+        
+        if (Array.isArray(basicInfoResponse) && basicInfoResponse.length > 0) {
+          responseData = basicInfoResponse[0];
+        }
+
+        if (!responseData || typeof responseData !== "object") {
+          throw new Error("The basic info API returned unexpected data.");
+        }
+
+        console.log("Extracted Data:", responseData);
+        setBasicInfoData(responseData);
+
+        if (responseData.officerName) {
+          setValue("officerName", responseData.officerName, { shouldDirty: false });
+        }
+        if (responseData.designation) {
+          setValue("designation", responseData.designation, { shouldDirty: false });
+        }
+        if (responseData.email) {
+          setValue("email", responseData.email, { shouldDirty: false });
+        }
+        if (responseData.mobile) {
+          setValue("mobile", responseData.mobile, { shouldDirty: false });
+        }
+        if (responseData.aadhaarNumber) {
+          setValue("aadhaarNumber", responseData.aadhaarNumber, { shouldDirty: false });
+        }
+        if (responseData.dateOfProposal) {
+          setValue("dateOfProposal", responseData.dateOfProposal, { shouldDirty: false });
+        }
+        if (responseData.expectedCompletionDate) {
+          setValue("expectedCompletionDate", responseData.expectedCompletionDate, { shouldDirty: false });
+        }
+        if (responseData.proposedFinancialOutlay) {
+          setValue("proposedFinancialOutlay", responseData.proposedFinancialOutlay, { shouldDirty: false });
+        }
+        if (responseData.schemeDuration) {
+          setValue("schemeDuration", responseData.schemeDuration, { shouldDirty: false });
+        }
+
+        setNodalOfficerError("");
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching basic info details:", error);
+          setNodalOfficerError(`Unable to load basic info details: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setNodalOfficerLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [setValue, searchParams]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -338,6 +434,89 @@ function BasicInfoStep() {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    if (!basicInfoData || !basicInfoData.schemeImplementingStates || states.length === 0) {
+      return;
+    }
+
+    const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+    if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+      return;
+    }
+
+    const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+
+    const processStateDistrictSelections = async () => {
+      try {
+        const stateDistrictSelectionsPromises = basicInfoData.schemeImplementingStates.map(async (state) => {
+          const matchedState = states.find(
+            (s) => s.stateName && s.stateName.toLowerCase() === state.stateName.toLowerCase()
+          );
+
+          if (!matchedState) {
+            return {
+              stateCode: "",
+              stateName: state.stateName,
+              districtIds: [],
+              districtCodes: [],
+              districtNames: []
+            };
+          }
+
+          try {
+            const districtResponse = await fetch(apiUrls.registrationDistricts(matchedState.stateCode), {
+              headers: { Authorization: authorization }
+            });
+
+            if (!districtResponse.ok) {
+              return {
+                stateCode: String(matchedState.stateCode),
+                stateName: state.stateName,
+                districtIds: (state.districts || []).map(String),
+                districtCodes: state.districts || [],
+                districtNames: state.districts || []
+              };
+            }
+
+            const districtOptions = await districtResponse.json();
+            const matchedDistrictIds = (state.districts || [])
+              .map((districtName) => {
+                const matched = districtOptions.find(
+                  (d) => d.districtName && d.districtName.toLowerCase() === districtName.toLowerCase()
+                );
+                return matched ? String(matched.districtId) : districtName;
+              });
+
+            return {
+              stateCode: String(matchedState.stateCode),
+              stateName: state.stateName,
+              districtIds: matchedDistrictIds,
+              districtCodes: matchedDistrictIds,
+              districtNames: state.districts || []
+            };
+          } catch (error) {
+            console.error(`Error fetching districts for ${matchedState.stateName}:`, error);
+            return {
+              stateCode: String(matchedState.stateCode),
+              stateName: state.stateName,
+              districtIds: (state.districts || []).map(String),
+              districtCodes: state.districts || [],
+              districtNames: state.districts || []
+            };
+          }
+        });
+
+        const stateDistrictSelections = await Promise.all(stateDistrictSelectionsPromises);
+        console.log("State District Selections:", stateDistrictSelections);
+        setValue("stateDistrictSelections", stateDistrictSelections, { shouldDirty: false });
+      } catch (error) {
+        console.error("Error processing state district selections:", error);
+      }
+    };
+
+    processStateDistrictSelections();
+  }, [basicInfoData, states, setValue]);
+
   return (
     <>
       <Paper
@@ -369,6 +548,8 @@ function BasicInfoStep() {
         <Typography component="h2" sx={sectionTitleSx}>
           2. Nodal Officer Details
         </Typography>
+        {nodalOfficerLoading && <Typography role="status" sx={{ mb: 1, color: "text.secondary", fontSize: 12 }}>Loading nodal officer details...</Typography>}
+        {nodalOfficerError && <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>{nodalOfficerError}</Typography>}
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
           <FormField id="organizationName" label="2.1 Name of Implementing Agency" required>
             <TextField 

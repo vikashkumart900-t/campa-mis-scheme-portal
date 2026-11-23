@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -20,7 +20,9 @@ import {
   Typography
 } from "@mui/material";
 import { Plus, Trash2, X } from "lucide-react";
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useSearchParams } from "react-router-dom";
+import { useFieldArray, useFormContext, Controller } from "react-hook-form";
+import { apiUrls } from "../../../api/urls";
 
 const sectionSx = {
   mb: 1.5,
@@ -252,10 +254,12 @@ function SupportingDocumentUpload({ id, name, register, fileName, error }) {
 }
 
 function ObjectivesFundingStep() {
+  const [searchParams] = useSearchParams();
   const {
     control,
     register,
     watch,
+    setValue,
     formState: { errors }
   } = useFormContext();
   const { fields, append, remove, replace } = useFieldArray({
@@ -265,6 +269,128 @@ function ObjectivesFundingStep() {
   const [uploadError, setUploadError] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [isReadingFile, setIsReadingFile] = useState(false);
+  const [objectivesLoading, setObjectivesLoading] = useState(true);
+  const [objectivesError, setObjectivesError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const schemeId = searchParams.get("schemeId");
+    const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+
+    if (!schemeId) {
+      setObjectivesLoading(false);
+      return;
+    }
+
+    if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+      setObjectivesLoading(false);
+      return;
+    }
+
+    const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+
+    fetch(apiUrls.objectives(schemeId), {
+      signal: controller.signal,
+      headers: { Authorization: authorization }
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error((await response.text()) || `Request failed with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((apiResponse) => {
+        console.log("Objectives API Response:", apiResponse);
+
+        // Handle both old (array) and new (object with stateFunding and objectives) formats
+        let objectivesArray = [];
+        let stateFunding = null;
+
+        if (Array.isArray(apiResponse)) {
+          // Old format - array of objectives
+          objectivesArray = apiResponse;
+        } else if (apiResponse && typeof apiResponse === "object") {
+          // New format - object with stateFunding and objectives
+          if (apiResponse.objectives && Array.isArray(apiResponse.objectives)) {
+            objectivesArray = apiResponse.objectives;
+          }
+          if (apiResponse.stateFunding) {
+            stateFunding = apiResponse.stateFunding;
+          }
+        }
+
+        if (objectivesArray.length === 0) {
+          throw new Error("No objectives data returned.");
+        }
+
+        // Process and set objectives data
+        const objectivesData = objectivesArray.map((obj) => ({
+          majorObjective: obj.majorObjective || "",
+          minorObjectives: (obj.minorObjectives || []).map((minor) => ({
+            minorObjective: minor.minorObjective || ""
+          }))
+        }));
+
+        console.log("Processed Objectives:", objectivesData);
+        replace(objectivesData);
+
+        // Process and set state funding data if available
+        if (stateFunding) {
+          console.log("Processing State Funding:", stateFunding);
+          
+          // Set hasStateComponents
+          if (stateFunding.hasStateComponents !== undefined) {
+            setValue("objectivesFunding.hasStateComponents", stateFunding.hasStateComponents ? "yes" : "no", {
+              shouldDirty: false
+            });
+          }
+
+          // Set stateAgreementDocument if fileName exists
+          if (stateFunding.stateAgreementFileName) {
+            setValue("objectivesFunding.stateAgreementDocument", [
+              { name: stateFunding.stateAgreementFileName, path: stateFunding.stateAgreementFileName }
+            ], { shouldDirty: false });
+          }
+
+          // Set hasOtherFundingAgency
+          if (stateFunding.hasOtherFundingAgency !== undefined) {
+            setValue("objectivesFunding.hasOtherFundingAgency", stateFunding.hasOtherFundingAgency ? "yes" : "no", {
+              shouldDirty: false
+            });
+          }
+
+          // Set otherFundingSources text
+          if (stateFunding.otherFundingSources) {
+            setValue("objectivesFunding.otherFundingSources", stateFunding.otherFundingSources, {
+              shouldDirty: false
+            });
+          }
+
+          // Set otherFundingAgencyDocument if fileName exists
+          if (stateFunding.fundingDocumentFileName) {
+            setValue("objectivesFunding.otherFundingAgencyDocument", [
+              { name: stateFunding.fundingDocumentFileName, path: stateFunding.fundingDocumentFileName }
+            ], { shouldDirty: false });
+          }
+        }
+
+        setObjectivesError("");
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching objectives:", error);
+          setObjectivesError(`Unable to load objectives: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setObjectivesLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [searchParams, replace, setValue]);
 
   const handleExcelUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -318,6 +444,8 @@ function ObjectivesFundingStep() {
   const otherFundingAgencyDocument = watch("objectivesFunding.otherFundingAgencyDocument");
   const validateStateBoardAgreement = (value) =>
     hasStateComponents !== "yes" || Boolean(value) || "Select Yes or No.";
+  
+  const shouldShowSupportingDocuments = hasStateComponents === "yes" || hasOtherFundingAgency === "yes";
 
   return (
     <>
@@ -325,6 +453,8 @@ function ObjectivesFundingStep() {
         <Typography component="h1" sx={sectionTitleSx}>
           4. Objectives
         </Typography>
+        {objectivesLoading && <Typography role="status" sx={{ mb: 1, color: "text.secondary", fontSize: 12 }}>Loading objectives...</Typography>}
+        {objectivesError && <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>{objectivesError}</Typography>}
 
         <Box
           sx={{
@@ -501,21 +631,30 @@ function ObjectivesFundingStep() {
             >
               5.1 WHETHER THE SCHEME HAS STATE COMPONENTS? <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </FormLabel>
-            <RadioGroup row>
-              <FormControlLabel
-                value="yes"
-                control={<Radio size="small" {...register("objectivesFunding.hasStateComponents", { required: "Select Yes or No." })} />}
-                label="Yes"
-                sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
-              />
-              <FormControlLabel
-                value="no"
-                control={<Radio size="small" {...register("objectivesFunding.hasStateComponents", { required: "Select Yes or No." })} />}
-                label="No"
-                sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
-              />
-            </RadioGroup>
-            {stateComponentsError?.message && <FormHelperText>{stateComponentsError.message}</FormHelperText>}
+            <Controller
+              name="objectivesFunding.hasStateComponents"
+              control={control}
+              rules={{ required: "Select Yes or No." }}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <RadioGroup row {...field}>
+                    <FormControlLabel
+                      value="yes"
+                      control={<Radio size="small" />}
+                      label="Yes"
+                      sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
+                    />
+                    <FormControlLabel
+                      value="no"
+                      control={<Radio size="small" />}
+                      label="No"
+                      sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
+                    />
+                  </RadioGroup>
+                  {error?.message && <FormHelperText>{error.message}</FormHelperText>}
+                </>
+              )}
+            />
           </FormControl>
 
           <Box
@@ -534,46 +673,43 @@ function ObjectivesFundingStep() {
                   WHETHER THE STATE IS ON BOARD BASED ON ANY SIGNED AGREEMENT
                   <Box component="span" sx={{ color: "#d32f2f" }}> *</Box>
                 </FormLabel>
-                <RadioGroup row>
-                  <FormControlLabel
-                    value="yes"
-                    control={
-                      <Radio
-                        size="small"
-                        {...register("objectivesFunding.stateBoardAgreement", {
-                          validate: validateStateBoardAgreement
-                        })}
-                      />
-                    }
-                    label="Yes"
-                    sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
-                  />
-                  <FormControlLabel
-                    value="no"
-                    control={
-                      <Radio
-                        size="small"
-                        {...register("objectivesFunding.stateBoardAgreement", {
-                          validate: validateStateBoardAgreement
-                        })}
-                      />
-                    }
-                    label="No"
-                    sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
-                  />
-                </RadioGroup>
-                {stateBoardAgreementError?.message && (
-                  <FormHelperText>{stateBoardAgreementError.message}</FormHelperText>
-                )}
+                <Controller
+                  name="objectivesFunding.stateBoardAgreement"
+                  control={control}
+                  rules={{ validate: validateStateBoardAgreement }}
+                  render={({ field, fieldState: { error } }) => (
+                    <>
+                      <RadioGroup row {...field}>
+                        <FormControlLabel
+                          value="yes"
+                          control={<Radio size="small" />}
+                          label="Yes"
+                          sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
+                        />
+                        <FormControlLabel
+                          value="no"
+                          control={<Radio size="small" />}
+                          label="No"
+                          sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
+                        />
+                      </RadioGroup>
+                      {error?.message && (
+                        <FormHelperText>{error.message}</FormHelperText>
+                      )}
+                    </>
+                  )}
+                />
               </FormControl>
             )}
-            <SupportingDocumentUpload
-              id="state-agreement-document"
-              name="objectivesFunding.stateAgreementDocument"
-              register={register}
-              fileName={stateAgreementDocument?.[0]?.name}
-              error={errors?.objectivesFunding?.stateAgreementDocument}
-            />
+            {shouldShowSupportingDocuments && (
+              <SupportingDocumentUpload
+                id="state-agreement-document"
+                name="objectivesFunding.stateAgreementDocument"
+                register={register}
+                fileName={stateAgreementDocument?.[0]?.name}
+                error={errors?.objectivesFunding?.stateAgreementDocument}
+              />
+            )}
           </Box>
 
           <FormControl component="fieldset" error={Boolean(fundingAgencyError)}>
@@ -583,21 +719,30 @@ function ObjectivesFundingStep() {
             >
               5.2 WHETHER THE SCHEME HAS OTHER FUNDING AGENCY? <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
             </FormLabel>
-            <RadioGroup row>
-              <FormControlLabel
-                value="yes"
-                control={<Radio size="small" {...register("objectivesFunding.hasOtherFundingAgency", { required: "Select Yes or No." })} />}
-                label="Yes"
-                sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
-              />
-              <FormControlLabel
-                value="no"
-                control={<Radio size="small" {...register("objectivesFunding.hasOtherFundingAgency", { required: "Select Yes or No." })} />}
-                label="No"
-                sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
-              />
-            </RadioGroup>
-            {fundingAgencyError?.message && <FormHelperText>{fundingAgencyError.message}</FormHelperText>}
+            <Controller
+              name="objectivesFunding.hasOtherFundingAgency"
+              control={control}
+              rules={{ required: "Select Yes or No." }}
+              render={({ field, fieldState: { error } }) => (
+                <>
+                  <RadioGroup row {...field}>
+                    <FormControlLabel
+                      value="yes"
+                      control={<Radio size="small" />}
+                      label="Yes"
+                      sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
+                    />
+                    <FormControlLabel
+                      value="no"
+                      control={<Radio size="small" />}
+                      label="No"
+                      sx={{ ml: 0, mr: 1, "& .MuiFormControlLabel-label": { fontSize: 11 } }}
+                    />
+                  </RadioGroup>
+                  {error?.message && <FormHelperText>{error.message}</FormHelperText>}
+                </>
+              )}
+            />
           </FormControl>
 
           <Box
@@ -627,13 +772,15 @@ function ObjectivesFundingStep() {
                 />
               </Box>
             )}
-            <SupportingDocumentUpload
-              id="other-funding-agency-document"
-              name="objectivesFunding.otherFundingAgencyDocument"
-              register={register}
-              fileName={otherFundingAgencyDocument?.[0]?.name}
-              error={errors?.objectivesFunding?.otherFundingAgencyDocument}
-            />
+            {shouldShowSupportingDocuments && (
+              <SupportingDocumentUpload
+                id="other-funding-agency-document"
+                name="objectivesFunding.otherFundingAgencyDocument"
+                register={register}
+                fileName={otherFundingAgencyDocument?.[0]?.name}
+                error={errors?.objectivesFunding?.otherFundingAgencyDocument}
+              />
+            )}
           </Box>
         </Box>
       </Paper>

@@ -1,8 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Button, Typography, FormHelperText } from "@mui/material";
 import { Download, Eye, FileText, Info } from "lucide-react";
 import { useFormContext } from "react-hook-form";
+import { apiUrls } from "../../../api/urls";
 import { fetchProposalPdf, openProposalPdfPreview } from "../../../api/proposalPdf";
+
+function base64ToFile(fileName, fileData) {
+  if (!fileData) return null;
+
+  const dataUrlMatch = fileData.match(/^data:([^;,]+)?;base64,([\s\S]*)$/);
+  let base64 = (dataUrlMatch ? dataUrlMatch[2] : fileData)
+    .replace(/\s/g, "")
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  while (base64.length % 4) base64 += "=";
+
+  const binary = atob(base64);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  const extension = fileName.split(".").pop()?.toLowerCase();
+  const mimeType = dataUrlMatch?.[1] || ({
+    pdf: "application/pdf",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg"
+  })[extension] || "application/octet-stream";
+
+  return new File([bytes], fileName, { type: mimeType });
+}
 
 function FileUploadRow({ label, fieldName, optional = false, info = false, error }) {
   const { register, watch } = useFormContext();
@@ -102,8 +126,55 @@ function FileUploadRow({ label, fieldName, optional = false, info = false, error
 function ReviewSubmissionStep({ schemeId }) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState("");
-  
-  const { formState: { errors } } = useFormContext();
+  const [finalDocumentsLoadError, setFinalDocumentsLoadError] = useState("");
+  const { getValues, setValue, formState: { errors } } = useFormContext();
+
+  useEffect(() => {
+    if (!schemeId || schemeId === "authenticated") return undefined;
+
+    const controller = new AbortController();
+    const loadFinalDocuments = async () => {
+      try {
+        const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+        if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+          throw new Error("Your session is missing an access token. Please sign in again.");
+        }
+
+        const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+        const response = await fetch(apiUrls.finalDocuments(schemeId), {
+          signal: controller.signal,
+          headers: { Authorization: authorization }
+        });
+        if (!response.ok) {
+          throw new Error((await response.text()) || `Request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
+          throw new Error("The final documents API returned unexpected data.");
+        }
+        if (controller.signal.aborted) return;
+
+        const signatureFile = base64ToFile(data.signatureFileName || "signature", data.signatureFileData);
+        const supportingDocument = base64ToFile(data.supportingDocumentName || "supporting-document", data.supportingDocumentData);
+        if (signatureFile && !getValues("signatureFile")?.length) {
+          setValue("signatureFile", [signatureFile], { shouldDirty: false });
+        }
+        if (supportingDocument && !getValues("supportingDocument")?.length) {
+          setValue("supportingDocument", [supportingDocument], { shouldDirty: false });
+        }
+        setFinalDocumentsLoadError("");
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching final documents:", error);
+          setFinalDocumentsLoadError(`Unable to load final documents: ${error.message}`);
+        }
+      }
+    };
+
+    loadFinalDocuments();
+    return () => controller.abort();
+  }, [getValues, schemeId, setValue]);
 
   const openPdfPreview = async () => {
     setPdfError("");
@@ -293,6 +364,11 @@ function ReviewSubmissionStep({ schemeId }) {
           error={errors.supportingDocument}
         />
       </Box>
+      {finalDocumentsLoadError && (
+        <Typography role="alert" sx={{ mt: 1, fontSize: 11, color: "error.main" }}>
+          {finalDocumentsLoadError}
+        </Typography>
+      )}
     </Box>
   );
 }

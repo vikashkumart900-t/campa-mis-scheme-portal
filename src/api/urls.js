@@ -9,6 +9,7 @@ export const apiUrls = {
   programDivisionOrganizations: `${campaApiBaseUrl}/program-division-organizations`,
   states: `${campaApiBaseUrl}/states`,
   registrationDropdownMetadata: `${campaApiBaseUrl}/dropdown-metadata`,
+  //post apis
   registrationDistricts: (stateCode) => `${campaApiBaseUrl}/districts/${encodeURIComponent(stateCode)}`,
   misObjectives: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/objective-details`,
   misDeliverables: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/deliverables`,
@@ -19,11 +20,21 @@ export const apiUrls = {
   misGeneratePdf: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/generate-pdf`,
   misFinalDocuments: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/final-documents`,
   getListingProposalById: (schemeId) => `${afterLoginBaseUrl}/getListingProposalById/${encodeURIComponent(schemeId)}`,
+  nodalOfficer: `${afterLoginBaseUrl}/basic-info`,
+  //get apis
+  basicInfo: (schemeId) => `${afterLoginBaseUrl}/basic-info/${encodeURIComponent(schemeId)}`,
+  objectives: (schemeId) => `${afterLoginBaseUrl}/objectives/${encodeURIComponent(schemeId)}`,
+  deliverables: (schemeId) => `${afterLoginBaseUrl}/deliverables/${encodeURIComponent(schemeId)}`,
+  evaluationResearch: (schemeId) => `${afterLoginBaseUrl}/evaluation-research/${encodeURIComponent(schemeId)}`,
+  techExit: (schemeId) => `${afterLoginBaseUrl}/tech-exit/${encodeURIComponent(schemeId)}`,
+  documentDetails: (schemeId) => `${afterLoginBaseUrl}/document-details/${encodeURIComponent(schemeId)}`,
+  bankDetails: (schemeId) => `${afterLoginBaseUrl}/bank-details/${encodeURIComponent(schemeId)}`,
+  finalDocuments: (schemeId) => `${afterLoginBaseUrl}/final-documents/${encodeURIComponent(schemeId)}`,
+  ///////////////////////////////////////
   register: `${campaApiBaseUrl}/register`,
   forgotPassword: `${campaApiBaseUrl}/forgot-password`,
   verifyResetOtp: `${campaApiBaseUrl}/verify-reset-otp`,
   resetPassword: `${campaApiBaseUrl}/reset-password`,
-  nodalOfficer: `${afterLoginBaseUrl}/nodal-officer`,
   misLogin: `${campaApiBaseUrl}/mis/login`,
   pariveshLogin: `${campaApiBaseUrl}/parivesh/login`
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -12,7 +12,9 @@ import {
   Typography
 } from "@mui/material";
 import { FileText } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useFormContext } from "react-hook-form";
+import { apiUrls } from "../../../api/urls";
 import revisedGuidelinesPdf from "../../../assets/Revised guidelines for proposing schemes (29.12.2025).pdf";
 
 const sectionSx = {
@@ -54,12 +56,87 @@ const formLabelSx = {
 };
 
 function TechExitDeclarationStep() {
+  const [searchParams] = useSearchParams();
   const {
     register,
+    setValue,
     formState: { errors }
   } = useFormContext();
   const [technologyDocumentName, setTechnologyDocumentName] = useState("");
   const [exitProtocolDocumentName, setExitProtocolDocumentName] = useState("");
+  const [techExitLoading, setTechExitLoading] = useState(true);
+  const [techExitError, setTechExitError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const schemeId = searchParams.get("schemeId");
+    const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+
+    if (!schemeId || schemeId === "authenticated") {
+      setTechExitLoading(false);
+      return;
+    }
+
+    if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+      setTechExitLoading(false);
+      return;
+    }
+
+    const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+
+    fetch(apiUrls.techExit(schemeId), {
+      signal: controller.signal,
+      headers: { Authorization: authorization }
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error((await response.text()) || `Request failed with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Tech Exit API Response:", data);
+
+        if (data) {
+          // Set technological intervention description
+          if (data.technologicalInterventionDescription) {
+            setValue("techExitDeclaration.technologyIntervention", data.technologicalInterventionDescription, { shouldDirty: false });
+          }
+
+          // Set technological document
+          if (data.technologicalDocumentName) {
+            setTechnologyDocumentName(data.technologicalDocumentName);
+            setValue("techExitDeclaration.technologyDocument", [{ name: data.technologicalDocumentName, path: data.technologicalDocumentName }], { shouldDirty: false });
+          }
+
+          // Set exit protocol description
+          if (data.exitProtocolDescription) {
+            setValue("techExitDeclaration.exitProtocol", data.exitProtocolDescription, { shouldDirty: false });
+          }
+
+          // Set exit protocol document
+          if (data.exitProtocolDocumentName) {
+            setExitProtocolDocumentName(data.exitProtocolDocumentName);
+            setValue("techExitDeclaration.exitProtocolDocument", [{ name: data.exitProtocolDocumentName, path: data.exitProtocolDocumentName }], { shouldDirty: false });
+          }
+
+          setTechExitError("");
+        }
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching tech exit data:", error);
+          setTechExitError(`Unable to load tech exit details: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setTechExitLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [searchParams, setValue]);
 
   const setFileName = (setter, event) => {
     setter(event.target.files?.[0]?.name || "");

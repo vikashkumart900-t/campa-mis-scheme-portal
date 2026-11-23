@@ -19,9 +19,11 @@ import {
   Typography
 } from "@mui/material";
 import { FileSpreadsheet, Info, Plus, Trash2, Upload } from "lucide-react";
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useSearchParams } from "react-router-dom";
+import { useFieldArray, useFormContext, Controller } from "react-hook-form";
 import { proposalSteps } from "../config/proposalSteps";
 import { getFinancialYears } from "../utils/financialYears";
+import { apiUrls } from "../../../api/urls";
 
 const step = proposalSteps[2];
 const sectionSx = {
@@ -445,18 +447,23 @@ function DescriptionList({ label, name, fields, append, remove, register, errors
 }
 
 function DeliverablesStep() {
+  const [searchParams] = useSearchParams();
   const {
     control,
     register,
     getValues,
     watch,
+    setValue,
     formState: { errors }
   } = useFormContext();
   const { fields, append, remove, replace } = useFieldArray({ control, name: "deliverables.items" });
-  const { replace: replaceYearWiseExpenditures } = useFieldArray({ control, name: "deliverables.yearWiseExpenditures" });
-  const { fields: nationalFields, append: appendNational, remove: removeNational } = useFieldArray({ control, name: "deliverables.nationalImportance" });
-  const { fields: internationalFields, append: appendInternational, remove: removeInternational } = useFieldArray({ control, name: "deliverables.internationalFootprints" });
+  const { fields: yearWiseFields, replace: replaceYearWiseExpenditures } = useFieldArray({ control, name: "deliverables.yearWiseExpenditures" });
+  const { fields: nationalFields, append: appendNational, remove: removeNational, replace: replaceNational } = useFieldArray({ control, name: "deliverables.nationalImportance" });
+  const { fields: internationalFields, append: appendInternational, remove: removeInternational, replace: replaceInternational } = useFieldArray({ control, name: "deliverables.internationalFootprints" });
   const items = watch("deliverables.items") || [];
+  const nationalImportance = watch("deliverables.nationalImportance") || [];
+  const internationalFootprints = watch("deliverables.internationalFootprints") || [];
+  const yearlyExpenditures = watch("deliverables.yearWiseExpenditures") || [];
   const expenditureType = watch("deliverables.expenditureType");
   const dateOfProposal = watch("dateOfProposal");
   const expectedCompletionDate = watch("expectedCompletionDate");
@@ -464,17 +471,140 @@ function DeliverablesStep() {
   const [uploadError, setUploadError] = useState("");
   const [uploadStatus, setUploadStatus] = useState("");
   const [isReadingFile, setIsReadingFile] = useState(false);
+  const [deliverablesLoading, setDeliverablesLoading] = useState(true);
+  const [deliverablesError, setDeliverablesError] = useState("");
 
   useEffect(() => {
+    const schemeId = searchParams.get("schemeId");
+    // Only auto-generate years if we don't have a schemeId (new entry)
+    if (schemeId && schemeId !== "authenticated") return;
+
     const currentRows = getValues("deliverables.yearWiseExpenditures") || [];
+    
+    // If we already have rows with expenditure values, don't recalculate
+    const hasExpenditureValues = currentRows.some(row => row.expenditure);
+    if (hasExpenditureValues && currentRows.length > 0) return;
+    
     const nextRows = getFinancialYears(dateOfProposal, expectedCompletionDate).map((financialYear) => {
       const existingRow = currentRows.find((row) => row.financialYear === financialYear);
-      return existingRow || { financialYear, expenditure: "" };
+      return existingRow ? { ...existingRow } : { financialYear, expenditure: "" };
     });
     const yearsMatch = currentRows.length === nextRows.length
       && currentRows.every((row, index) => row.financialYear === nextRows[index].financialYear);
     if (!yearsMatch) replaceYearWiseExpenditures(nextRows);
-  }, [dateOfProposal, expectedCompletionDate, getValues, replaceYearWiseExpenditures]);
+  }, [dateOfProposal, expectedCompletionDate, getValues, replaceYearWiseExpenditures, searchParams]);
+
+  useEffect(() => {
+    const schemeId = searchParams.get("schemeId");
+    if (!schemeId || schemeId === "authenticated") {
+      setDeliverablesLoading(false);
+      setDeliverablesError("");
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchDeliverablesData = async () => {
+      setDeliverablesLoading(true);
+      setDeliverablesError("");
+      try {
+        const url = apiUrls.deliverables(encodeURIComponent(schemeId));
+        const token = sessionStorage.getItem("campaJwt") || "";
+        const authToken = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+
+        const response = await fetch(url, {
+          method: "GET",
+          headers: { Authorization: authToken },
+          signal: controller.signal
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load deliverables: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const deliverable = Array.isArray(data) ? data[0] : data;
+
+        if (deliverable) {
+          if (deliverable.id) {
+            setValue("deliverables.id", deliverable.id, { shouldDirty: false });
+          }
+          if (deliverable.expenditureType) {
+            const expenditureTypeValue = deliverable.expenditureType === "YEAR_WISE" ? "yearWise" : 
+                                        deliverable.expenditureType === "ACTIVITY_WISE" ? "activityWise" : 
+                                        deliverable.expenditureType;
+            setValue("deliverables.expenditureType", expenditureTypeValue, { shouldDirty: false });
+          } else {
+            setValue("deliverables.expenditureType", "yearWise", { shouldDirty: false });
+          }
+          if (deliverable.totalOutlay) {
+            setValue("deliverables.totalOutlay", deliverable.totalOutlay, { shouldDirty: false });
+          }
+          if (deliverable.totalDeliverables) {
+            setValue("deliverables.totalDeliverables", deliverable.totalDeliverables, { shouldDirty: false });
+          }
+
+          if (deliverable.deliverables && Array.isArray(deliverable.deliverables)) {
+            const formattedDeliverables = deliverable.deliverables.map((item) => ({
+              id: item.id || undefined,
+              description: item.deliverable || "",
+              unit: item.unit || "",
+              initiationDate: item.initiationDate || "",
+              closingDate: item.closingDate || "",
+              financialOutlay: item.financialOutlay || "",
+              remarks: item.remarks || "",
+              attachment: null,
+              documentFileName: item.documentFileName || null,
+              documentFilePath: item.documentFilePath || null
+            }));
+            replace(formattedDeliverables);
+          }
+
+          if (deliverable.yearlyExpenditures && Array.isArray(deliverable.yearlyExpenditures)) {
+            const formattedYearlyExpenditures = deliverable.yearlyExpenditures.map((item) => ({
+              financialYear: item.financialYear || "",
+              expenditure: item.expenditure !== undefined && item.expenditure !== null ? Number(item.expenditure) : ""
+            }));
+            replaceYearWiseExpenditures(formattedYearlyExpenditures);
+          }
+
+          if (deliverable.nationalImportance && Array.isArray(deliverable.nationalImportance)) {
+            const formattedNational = deliverable.nationalImportance.map((item) => ({
+              description: item
+            }));
+            replaceNational(formattedNational);
+          }
+
+          if (deliverable.internationalFootprints && Array.isArray(deliverable.internationalFootprints)) {
+            const formattedInternational = deliverable.internationalFootprints.map((item) => ({
+              description: item
+            }));
+            replaceInternational(formattedInternational);
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          setDeliverablesError(`Unable to load deliverables: ${error.message}`);
+        }
+      } finally {
+        setDeliverablesLoading(false);
+      }
+    };
+
+    fetchDeliverablesData();
+
+    return () => controller.abort();
+  }, [searchParams, setValue, replace, replaceYearWiseExpenditures, replaceNational, replaceInternational]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentValue = getValues("deliverables.expenditureType");
+      if (!currentValue) {
+        setValue("deliverables.expenditureType", "yearWise", { shouldDirty: false });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [getValues, setValue]);
 
   const handleExcelUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -522,6 +652,14 @@ function DeliverablesStep() {
       <Typography component="h1" sx={sectionTitleSx}>
         6. {step.label}
       </Typography>
+
+      {deliverablesError && (
+        <Box sx={{ mb: 1.5, p: 1, bgcolor: "#ffebee", border: "1px solid #ef5350", borderRadius: 1 }}>
+          <Typography sx={{ color: "#c62828", fontSize: 12 }}>
+            {deliverablesError}
+          </Typography>
+        </Box>
+      )}
 
       <Typography sx={{ mb: 1, color: "#344457", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>
         6.1 Add Deliverable
@@ -596,20 +734,32 @@ function DeliverablesStep() {
           6.2 Year-wise Estimated Expenditure (Select Anyone)
         </Typography>
         <FormControl error={Boolean(errors?.deliverables?.expenditureType)}>
-          <RadioGroup row name="deliverables.expenditureType" value={expenditureType || ""} sx={{ columnGap: 1.5, rowGap: 0, flexWrap: "wrap" }}>
-            <FormControlLabel
-              value="activityWise"
-              control={<Radio size="small" {...register("deliverables.expenditureType", { required: "Select an expenditure option." })} />}
-              label="Activity-wise (from Deliverables)"
-              sx={{ mr: 1, "& .MuiFormControlLabel-label": { color: "#7a8798", fontSize: 11 } }}
-            />
-            <FormControlLabel
-              value="yearWise"
-              control={<Radio size="small" {...register("deliverables.expenditureType", { required: "Select an expenditure option." })} />}
-              label="Year-wise (Financial Year)"
-              sx={{ mr: 1, "& .MuiFormControlLabel-label": { color: "#344457", fontSize: 11 } }}
-            />
-          </RadioGroup>
+          <Controller
+            name="deliverables.expenditureType"
+            control={control}
+            defaultValue="yearWise"
+            rules={{ required: "Select an expenditure option." }}
+            render={({ field }) => (
+              <RadioGroup 
+                {...field}
+                row 
+                sx={{ columnGap: 1.5, rowGap: 0, flexWrap: "wrap" }}
+              >
+                <FormControlLabel
+                  value="activityWise"
+                  control={<Radio size="small" />}
+                  label="Activity-wise (from Deliverables)"
+                  sx={{ mr: 1, "& .MuiFormControlLabel-label": { color: "#7a8798", fontSize: 11 } }}
+                />
+                <FormControlLabel
+                  value="yearWise"
+                  control={<Radio size="small" />}
+                  label="Year-wise (Financial Year)"
+                  sx={{ mr: 1, "& .MuiFormControlLabel-label": { color: "#344457", fontSize: 11 } }}
+                />
+              </RadioGroup>
+            )}
+          />
           {errors?.deliverables?.expenditureType && <FormHelperText>{errors.deliverables.expenditureType.message}</FormHelperText>}
         </FormControl>
       </Box>
@@ -650,26 +800,67 @@ function DeliverablesStep() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ ...tableHeaderSx, width: "38%" }}>Financial Year</TableCell>
-                  <TableCell sx={{ ...tableHeaderSx, borderRight: 0 }}>Expenditure (Rs. in Lakhs)</TableCell>
+                  <TableCell sx={{ ...tableHeaderSx, borderRight: 0 }}>Expenditure (Rs)</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {financialYears.length ? financialYears.map((financialYear, index) => (
+                {yearlyExpenditures.length ? yearlyExpenditures.map((row, index) => (
+                  <TableRow key={row.financialYear || index}>
+                    <TableCell sx={{ ...tableCellSx, width: "38%", fontSize: 11 }}>{row.financialYear}</TableCell>
+                    <TableCell sx={{ ...tableCellSx, borderRight: 0 }}>
+                      <input type="hidden" {...register(`deliverables.yearWiseExpenditures.${index}.financialYear`)} value={row.financialYear} />
+                      <Controller
+                        name={`deliverables.yearWiseExpenditures.${index}.expenditure`}
+                        control={control}
+                        rules={{
+                          required: "Expenditure is required.",
+                          min: { value: 0, message: "Expenditure cannot be negative." }
+                        }}
+                        render={({ field, fieldState: { error } }) => (
+                          <TextField
+                            {...field}
+                            type="number"
+                            placeholder="Enter amount"
+                            fullWidth
+                            size="small"
+                            sx={inputSx}
+                            error={Boolean(error)}
+                            helperText={error?.message}
+                            slotProps={{ htmlInput: { min: 0, step: "any" } }}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : "")}
+                          />
+                        )}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )) : financialYears.length ? financialYears.map((financialYear, index) => (
                   <TableRow key={financialYear}>
                     <TableCell sx={{ ...tableCellSx, width: "38%", fontSize: 11 }}>{financialYear}</TableCell>
                     <TableCell sx={{ ...tableCellSx, borderRight: 0 }}>
-                      <TextField
-                        type="number"
-                        placeholder="Enter amount"
-                        fullWidth
-                        size="small"
-                        sx={inputSx}
-                        slotProps={{ htmlInput: { min: 0, step: "any" } }}
-                        {...register(`deliverables.yearWiseExpenditures.${index}.expenditure`, {
+                      <input type="hidden" {...register(`deliverables.yearWiseExpenditures.${index}.financialYear`)} value={financialYear} />
+                      <Controller
+                        name={`deliverables.yearWiseExpenditures.${index}.expenditure`}
+                        control={control}
+                        rules={{
                           required: "Expenditure is required.",
-                          valueAsNumber: true,
                           min: { value: 0, message: "Expenditure cannot be negative." }
-                        })}
+                        }}
+                        render={({ field, fieldState: { error } }) => (
+                          <TextField
+                            {...field}
+                            type="number"
+                            placeholder="Enter amount"
+                            fullWidth
+                            size="small"
+                            sx={inputSx}
+                            error={Boolean(error)}
+                            helperText={error?.message}
+                            slotProps={{ htmlInput: { min: 0, step: "any" } }}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : "")}
+                          />
+                        )}
                       />
                     </TableCell>
                   </TableRow>

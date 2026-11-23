@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   FormControl,
@@ -14,6 +14,8 @@ import {
   Typography
 } from "@mui/material";
 import { useFieldArray, useFormContext } from "react-hook-form";
+import { useSearchParams } from "react-router-dom";
+import { apiUrls } from "../../../api/urls";
 import { getFinancialYears } from "../utils/financialYears";
 
 const sectionSx = {
@@ -57,15 +59,19 @@ const tableCellSx = {
   verticalAlign: "middle"
 };
 function InstallmentStep() {
+  const [searchParams] = useSearchParams();
+  const [bankDetailsLoadError, setBankDetailsLoadError] = useState("");
   const {
     control,
     getValues,
     register,
+    setValue,
     clearErrors,
     watch,
     formState: { errors }
   } = useFormContext();
   const { fields, replace } = useFieldArray({ control, name: "installment.installments" });
+  const schemeId = searchParams.get("schemeId");
   const dateOfProposal = watch("dateOfProposal");
   const expectedCompletionDate = watch("expectedCompletionDate");
   const schemeName = watch("schemeName");
@@ -89,6 +95,61 @@ function InstallmentStep() {
     if (nextRows.length) clearErrors("installment.installments");
   }, [clearErrors, dateOfProposal, expectedCompletionDate, getValues, replace]);
 
+  useEffect(() => {
+    if (!schemeId || schemeId === "authenticated") return undefined;
+
+    const controller = new AbortController();
+    const loadBankDetails = async () => {
+      try {
+        const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+        if (!accessToken || accessToken.toLowerCase() === "authenticated") {
+          throw new Error("Your session is missing an access token. Please sign in again.");
+        }
+
+        const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
+        const response = await fetch(apiUrls.bankDetails(schemeId), {
+          signal: controller.signal,
+          headers: { Authorization: authorization }
+        });
+        if (!response.ok) {
+          throw new Error((await response.text()) || `Request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
+          throw new Error("The bank details API returned unexpected data.");
+        }
+        if (data.installments != null && !Array.isArray(data.installments)) {
+          throw new Error("The bank details API returned unexpected installment data.");
+        }
+        if (controller.signal.aborted) return;
+
+        const accountNumber = String(data.accountNumber ?? "");
+        setValue("installment.bankDetails.accountName", data.accountName || "", { shouldDirty: false });
+        setValue("installment.bankDetails.bankName", data.bankName || "", { shouldDirty: false });
+        setValue("installment.bankDetails.ifscCode", data.ifscCode || "", { shouldDirty: false });
+        setValue("installment.bankDetails.branchNameAddress", data.branchNameAddress || "", { shouldDirty: false });
+        setValue("installment.bankDetails.accountNumber", accountNumber, { shouldDirty: false });
+        setValue("installment.bankDetails.confirmAccountNumber", accountNumber, { shouldDirty: false });
+        replace((data.installments || []).map((installment, index) => ({
+          financialYear: installment.financialYear || "",
+          installmentNumber: Number(installment.installmentNo ?? index + 1),
+          duration: installment.duration ?? "",
+          amount: installment.amountInLakh == null ? "" : Number(installment.amountInLakh)
+        })));
+        setBankDetailsLoadError("");
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching bank details:", error);
+          setBankDetailsLoadError(`Unable to load bank details: ${error.message}`);
+        }
+      }
+    };
+
+    loadBankDetails();
+    return () => controller.abort();
+  }, [schemeId, replace, setValue]);
+
   const totalAmount = proposedFinancialOutlay === "" || proposedFinancialOutlay === undefined
     || !Number.isFinite(Number(proposedFinancialOutlay))
     ? ""
@@ -108,6 +169,11 @@ function InstallmentStep() {
       <Typography sx={{ mb: 2, color: "#425162", fontSize: 12, lineHeight: 1.5 }}>
         Please provide the installments yet to be released (New) and the bank details.
       </Typography>
+      {bankDetailsLoadError && (
+        <Typography role="alert" sx={{ mb: 1, color: "error.main", fontSize: 12 }}>
+          {bankDetailsLoadError}
+        </Typography>
+      )}
 
       <Paper elevation={0} sx={sectionSx}>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 1.5, mb: 1.5 }}>
