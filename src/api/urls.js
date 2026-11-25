@@ -19,7 +19,7 @@ export const apiUrls = {
   misBankDetails: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/bank-details`,
   misGeneratePdf: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/generate-pdf`,
   misFinalDocuments: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/final-documents`,
-  getListingProposalById: (schemeId) => `${afterLoginBaseUrl}/getListingProposalById/${encodeURIComponent(schemeId)}`,
+  updateRoleStatus: `${afterLoginBaseUrl}/updateRoleStatus`,
   nodalOfficer: `${afterLoginBaseUrl}/basic-info`,
   //get apis
   basicInfo: (schemeId) => `${afterLoginBaseUrl}/basic-info/${encodeURIComponent(schemeId)}`,
@@ -30,6 +30,7 @@ export const apiUrls = {
   documentDetails: (schemeId) => `${afterLoginBaseUrl}/document-details/${encodeURIComponent(schemeId)}`,
   bankDetails: (schemeId) => `${afterLoginBaseUrl}/bank-details/${encodeURIComponent(schemeId)}`,
   finalDocuments: (schemeId) => `${afterLoginBaseUrl}/final-documents/${encodeURIComponent(schemeId)}`,
+  getListingProposalById: (schemeId) => `${afterLoginBaseUrl}/getListingProposalById/${encodeURIComponent(schemeId)}`,
   ///////////////////////////////////////
   register: `${campaApiBaseUrl}/register`,
   forgotPassword: `${campaApiBaseUrl}/forgot-password`,

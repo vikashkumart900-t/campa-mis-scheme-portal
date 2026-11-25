@@ -41,11 +41,24 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { apiUrls } from "../../api/urls";
 import { openProposalPdfPreview } from "../../api/proposalPdf";
 
 const drawerWidth = 256;
+const actionButtonSx = {
+  minWidth: 0,
+  px: 1,
+  py: 0.35,
+  borderRadius: 1,
+  borderColor: "#16813b",
+  color: "#08752c",
+  fontSize: 11,
+  fontWeight: 700,
+  textTransform: "none",
+  "&:hover": { borderColor: "#0f6b30", bgcolor: "#f3fbf5" }
+};
 
 const getStatusDisplay = (campaStatus) => {
   const statusMap = {
@@ -286,18 +299,9 @@ function MyProposalsTable() {
                     <Button
                       size="small"
                       onClick={() => handleViewStatus(proposal)}
-                      sx={{
-                        textTransform: "none",
-                        fontWeight: 600,
-                        fontSize: 11,
-                        color: "#174b35",
-                        bgcolor: "#fff3e0",
-                        padding: "4px 12px",
-                        border: "1px solid #ffe0b2",
-                        "&:hover": {
-                          bgcolor: "#ffecb3"
-                        }
-                      }}
+                      startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 15 }} />}
+                      variant="outlined"
+                      sx={actionButtonSx}
                     >
                       View
                     </Button>

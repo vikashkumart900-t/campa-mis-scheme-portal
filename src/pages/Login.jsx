@@ -166,11 +166,11 @@ function Login() {
   });
   const t = (key) => translateText(key, language);
   const roleLabels = {
-    implementingAgency: "Implementing Agency (IA) ",
-    hod: "Head of Division (HOD)",
+    implementingAgency: "Implementing Agency (IA)-(WII) ",
+    hod: "Head of Department (HOD)",
     state_hod: "Chief Wildlife Warden (CWLW)",
-    districtForestOfficer: "District Forest Officer (DFO)",
-    programDivision: "Programme Division (PD)",
+    districtForestOfficer: "District/Divisional Forest Officer (DFO)",
+    programDivision: "Programme Division (PD)-(MOEFCC)",
     nationalCampa: "National Authority (CAMPA)"
   };
   const roleDescriptions = {

@@ -5,6 +5,7 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { apiUrls } from "../api/urls";
 import AasthaVanProposalForm from "../features/aastha-van/AasthaVanProposalForm";
 import AasthaVanProjectInventory from "../features/aastha-van/AasthaVanProjectInventory";
+import HODDashboard from "./dashboards/HODDashboard";
 import IADashboard from "./dashboards/IADashboard";
 import SchemeProposalWizard from "./dashboards/SchemeProposalWizard";
 
@@ -190,6 +191,10 @@ function UserDashboard() {
 
   if (userType === "implementingAgency") {
     return <IADashboard />;
+  }
+
+  if (userType === "hod") {
+    return <HODDashboard />;
   }
 
   return <PlaceholderDashboard userType={userType} />;
