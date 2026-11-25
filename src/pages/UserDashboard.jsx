@@ -7,6 +7,7 @@ import AasthaVanProposalForm from "../features/aastha-van/AasthaVanProposalForm"
 import AasthaVanProjectInventory from "../features/aastha-van/AasthaVanProjectInventory";
 import HODDashboard from "./dashboards/HODDashboard";
 import IADashboard from "./dashboards/IADashboard";
+import PDDashboard from "./dashboards/PDDashboard";
 import SchemeProposalWizard from "./dashboards/SchemeProposalWizard";
 
 const userTypes = ["implementingAgency", "hod", "state_hod", "districtForestOfficer", "programDivision", "nationalCampa"];
@@ -195,6 +196,10 @@ function UserDashboard() {
 
   if (userType === "hod") {
     return <HODDashboard />;
+  }
+
+  if (userType === "programDivision") {
+    return <PDDashboard />;
   }
 
   return <PlaceholderDashboard userType={userType} />;
