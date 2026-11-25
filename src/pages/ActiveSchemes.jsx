@@ -50,6 +50,13 @@ function ActiveSchemes() {
     }
     if (selectedScheme.schemeCode) loginParams.set("schemeCode", selectedScheme.schemeCode);
     if (selectedScheme.schemeId != null) loginParams.set("schemeId", String(selectedScheme.schemeId));
+    if (schemeDetails.organizationId != null) {
+      loginParams.set("organizationId", String(schemeDetails.organizationId));
+    }
+    const programDivisionId = schemeDetails.divisionId ?? schemeDetails.programDivisionId;
+    if (programDivisionId != null) {
+      loginParams.set("programDivisionId", String(programDivisionId));
+    }
     navigate(`/signin?${loginParams.toString()}`);
   };
 

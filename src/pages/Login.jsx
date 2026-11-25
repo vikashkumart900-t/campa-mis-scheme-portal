@@ -32,7 +32,8 @@ const roleTileOrder = [
   "programDivision",
   "nationalCampa"
 ];
-const registerableUserTypes = ["implementingAgency", "programDivision"];
+const registerableUserTypes = ["implementingAgency", "hod", "programDivision"];
+const organizationRegistrationUserTypes = ["implementingAgency", "hod"];
 const misLoginUserTypes = ["implementingAgency", "programDivision", "hod"];
 const captchaCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -153,10 +154,10 @@ function Login() {
   const [districtLoading, setDistrictLoading] = useState(false);
   const [districtError, setDistrictError] = useState("");
   const [registrationForm, setRegistrationForm] = useState({
-    organizationId: "",
+    organizationId: searchParams.get("organizationId") || "",
     stateCode: "",
     districtId: "",
-    programDivisionId: "",
+    programDivisionId: searchParams.get("programDivisionId") || "",
     officerName: "",
     designation: "",
     email: "",
@@ -366,24 +367,24 @@ function Login() {
     setRegistrationMessage("");
 
     try {
-      if (!["implementingAgency", "programDivision"].includes(userType)) {
+      if (!registerableUserTypes.includes(userType)) {
         throw new Error("Registration is not available for the selected role.");
       }
-      const isImplementingAgency = userType === "implementingAgency";
+      const requiresOrganization = organizationRegistrationUserTypes.includes(userType);
       const organizationId = Number(registrationForm.organizationId);
       const programDivisionId = Number(registrationForm.programDivisionId);
 
-      if (isImplementingAgency) {
+      if (requiresOrganization) {
         if (!Number.isSafeInteger(organizationId) || organizationId <= 0) {
-          throw new Error("Select a valid implementing agency.");
+          throw new Error("Select a valid organization.");
         }
         if (!registrationOrganizationOptions.some(
           (organization) => Number(organization.id) === organizationId
         )) {
-          throw new Error("The selected implementing agency is not available.");
+          throw new Error("The selected organization is not available.");
         }
       }
-      const availableDivisions = isImplementingAgency
+      const availableDivisions = requiresOrganization
         ? registrationProgramDivisionOptions
         : allProgramDivisionOptions;
       if (!availableDivisions.some((division) => division.programDivisionId === programDivisionId)) {
@@ -398,7 +399,7 @@ function Login() {
         mobile: registrationForm.mobile,
         password: registrationForm.password
       };
-      if (isImplementingAgency) {
+      if (requiresOrganization) {
         payload.organizationId = organizationId;
       }
       const response = await fetch(apiUrls.register, {
@@ -679,6 +680,7 @@ function Login() {
                               className="login-modal-input"
                               name="organizationId"
                               value={registrationForm.organizationId}
+                              disabled={Boolean(searchParams.get("organizationId"))}
                               onChange={(event) => {
                                 const { value } = event.target;
                                 setRegistrationForm((previous) => ({
@@ -760,7 +762,10 @@ function Login() {
                               value={registrationForm.programDivisionId}
                               onChange={handleRegistrationFieldChange}
                               required
-                              disabled={!registrationForm.organizationId}
+                              disabled={
+                                !registrationForm.organizationId ||
+                                Boolean(searchParams.get("programDivisionId"))
+                              }
                             >
                               <option value="">Select programme division</option>
                               {registrationProgramDivisionOptions.map((division) => (
@@ -773,7 +778,7 @@ function Login() {
                         )}
                       </>
                     )}
-                    {userType === "implementingAgency" && registrationOrganizationOptions.length === 0 && !registrationMappingsLoading && !registrationMappingsError && (
+                    {organizationRegistrationUserTypes.includes(userType) && registrationOrganizationOptions.length === 0 && !registrationMappingsLoading && !registrationMappingsError && (
                       <p className="captcha-error" role="alert">No organizations are available for this user type.</p>
                     )}
                     <input
