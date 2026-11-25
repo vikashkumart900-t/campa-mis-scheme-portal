@@ -107,7 +107,7 @@ async function getResponseErrorMessage(response) {
   return responseText;
 }
 
-function PDProposalsTable({ refreshKey }) {
+function PDProposalsTable({ refreshKey, latestStatusUpdate }) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchText, setSearchText] = useState("");
@@ -129,20 +129,35 @@ function PDProposalsTable({ refreshKey }) {
 
         setLoading(true);
         const token = sessionStorage.getItem("campaJwt");
-        const response = await fetch(apiUrls.getListingProposalById(schemeId), {
+        const requestOptions = {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
           }
-        });
+        };
+        const [response, roleStatusResponse] = await Promise.all([
+          fetch(apiUrls.getListingProposalById(schemeId), requestOptions),
+          fetch(apiUrls.schemeRoleStatusById(schemeId), requestOptions)
+        ]);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch proposal: ${response.status}`);
         }
+        if (!roleStatusResponse.ok) {
+          throw new Error(`Failed to fetch proposal role status: ${roleStatusResponse.status}`);
+        }
 
-        const data = await response.json();
-        setProposalsData([{
+        const [data, roleStatusData] = await Promise.all([response.json(), roleStatusResponse.json()]);
+        const statusUpdate = latestStatusUpdate && String(latestStatusUpdate.schemeId) === String(data.schemeId)
+          ? latestStatusUpdate
+          : null;
+        const statusData = {
+          ...data,
+          ...roleStatusData,
+          ...(statusUpdate || {})
+        };
+        const proposal = {
           sno: 1,
           schemeId: data.schemeId,
           schemeName: data.schemeName,
@@ -150,10 +165,19 @@ function PDProposalsTable({ refreshKey }) {
           schemeDuration: data.schemeDuration,
           proposedFinancialOutlay: data.proposedFinancialOutlay.toFixed(2),
           submissionDate: data.submissionDate,
-          campaStatus: data.campaStatus,
-          hodStatus: data.hodStatus,
-          pdStatus: data.pdStatus
-        }]);
+          hodUpdatedAt: statusData.hodUpdatedAt,
+          pdUpdatedAt: statusData.pdUpdatedAt,
+          campaUpdatedAt: statusData.campaUpdatedAt,
+          campaStatus: statusData.campaStatus,
+          hodStatus: statusData.hodStatus,
+          pdStatus: statusData.pdStatus
+        };
+        setProposalsData([proposal]);
+        setSelectedStatusProposal((currentProposal) =>
+          currentProposal && String(currentProposal.schemeId) === String(proposal.schemeId)
+            ? proposal
+            : currentProposal
+        );
         setError("");
       } catch (fetchError) {
         console.error("Error fetching PD proposals:", fetchError);
@@ -165,7 +189,7 @@ function PDProposalsTable({ refreshKey }) {
     };
 
     fetchProposal();
-  }, [refreshKey, schemeId]);
+  }, [latestStatusUpdate, refreshKey, schemeId]);
 
   const filteredProposals = proposalsData.filter((proposal) =>
     proposal.schemeName.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -187,9 +211,9 @@ function PDProposalsTable({ refreshKey }) {
 
   const statusFields = selectedStatusProposal
     ? [
-        ["CAMPA Status", selectedStatusProposal.campaStatus],
-        ["HOD Status", selectedStatusProposal.hodStatus],
-        ["PD Status", selectedStatusProposal.pdStatus]
+        ["HOD Status", selectedStatusProposal.hodStatus, selectedStatusProposal.hodUpdatedAt],
+        ["PD Status", selectedStatusProposal.pdStatus, selectedStatusProposal.pdUpdatedAt],
+        ["CAMPA Status", selectedStatusProposal.campaStatus, selectedStatusProposal.campaUpdatedAt]
       ]
     : [];
 
@@ -299,8 +323,13 @@ function PDProposalsTable({ refreshKey }) {
         <DialogTitle sx={{ bgcolor: "#174b35", color: "#fff", fontWeight: 700 }}>Status Details</DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
           <Stack spacing={2}>
-            {statusFields.map(([label, status]) => (
-              <Box key={label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 1.5, bgcolor: "#f9faf9", borderRadius: 1 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: "minmax(90px, 1fr) auto minmax(90px, 1fr)", gap: 1, px: 1.5, pt: 2 }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176" }}>Review Stage</Typography>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176" }}>Status</Typography>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176", textAlign: "right" }}>Last Action Date</Typography>
+            </Box>
+            {statusFields.map(([label, status, lastActionDate]) => (
+              <Box key={label} sx={{ display: "grid", gridTemplateColumns: "minmax(90px, 1fr) auto minmax(90px, 1fr)", gap: 1, alignItems: "center", p: 1.5, bgcolor: "#f9faf9", borderRadius: 1 }}>
                 <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#6a8176" }}>{label}:</Typography>
                 <Chip
                   label={status}
@@ -313,6 +342,7 @@ function PDProposalsTable({ refreshKey }) {
                     color: status === "PENDING" ? "#e65100" : status === "APPROVED" ? "#2e7d32" : "#c62828"
                   }}
                 />
+                <Typography sx={{ fontSize: 12, color: "#23332d", textAlign: "right" }}>{formatSubmissionDate(lastActionDate)}</Typography>
               </Box>
             ))}
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
@@ -336,6 +366,7 @@ function PDDashboard() {
   const [decisionSuccessOpen, setDecisionSuccessOpen] = useState(false);
   const [decisionSubmitting, setDecisionSubmitting] = useState(false);
   const [proposalRefreshKey, setProposalRefreshKey] = useState(0);
+  const [latestStatusUpdate, setLatestStatusUpdate] = useState(null);
   const [searchParams] = useSearchParams();
   const schemeIdParam = searchParams.get("schemeId");
   const theme = useTheme();
@@ -386,6 +417,8 @@ function PDDashboard() {
         throw new Error(await getResponseErrorMessage(response));
       }
 
+      const statusUpdate = await response.json();
+      setLatestStatusUpdate(statusUpdate);
       setDecision("forward");
       setRemarks("");
       setProposalRefreshKey((currentKey) => currentKey + 1);
@@ -491,7 +524,7 @@ function PDDashboard() {
               gap: 2.5
             }}
           >
-            <PDProposalsTable refreshKey={proposalRefreshKey} />
+            <PDProposalsTable refreshKey={proposalRefreshKey} latestStatusUpdate={latestStatusUpdate} />
             <Paper
               component="form"
               elevation={0}

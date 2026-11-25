@@ -31,6 +31,7 @@ export const apiUrls = {
   bankDetails: (schemeId) => `${afterLoginBaseUrl}/bank-details/${encodeURIComponent(schemeId)}`,
   finalDocuments: (schemeId) => `${afterLoginBaseUrl}/final-documents/${encodeURIComponent(schemeId)}`,
   getListingProposalById: (schemeId) => `${afterLoginBaseUrl}/getListingProposalById/${encodeURIComponent(schemeId)}`,
+  schemeRoleStatusById: (schemeId) => `${afterLoginBaseUrl}/schemeRoleStatusByID/${encodeURIComponent(schemeId)}`,
   ///////////////////////////////////////
   register: `${campaApiBaseUrl}/register`,
   forgotPassword: `${campaApiBaseUrl}/forgot-password`,
