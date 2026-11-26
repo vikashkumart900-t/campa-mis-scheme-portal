@@ -405,7 +405,7 @@ function MyProposalsTable() {
         <DialogContent sx={{ pt: 3 }}>
           {selectedStatusProposal && (
             <Stack spacing={2}>
-              <Box sx={{ display: "grid", gridTemplateColumns: "minmax(90px, 1fr) auto minmax(90px, 1fr)", gap: 1, px: 1.5 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "minmax(90px, 1fr) auto minmax(90px, 1fr)", gap: 1, px: 1.5, pt: 2 }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176" }}>Review Stage</Typography>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176" }}>Status</Typography>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176", textAlign: "right" }}>Last Action Date</Typography>

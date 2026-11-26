@@ -19,6 +19,17 @@ import { apiUrls } from "../../../api/urls";
 
 const selectAllDistrictsValue = "__select_all_districts__";
 
+function normalizeDistrictValue(value) {
+  return String(value ?? "").trim().toLocaleLowerCase();
+}
+
+function getSavedDistrictValue(district) {
+  if (typeof district === "string" || typeof district === "number") {
+    return String(district).trim();
+  }
+  return String(district?.districtName ?? district?.districtCode ?? district?.districtId ?? "").trim();
+}
+
 const inputSx = {
   "& .MuiInputBase-root": { bgcolor: "#fff", fontSize: 12 },
   "& .MuiInputLabel-root": { fontSize: 12 }
@@ -115,6 +126,12 @@ function StateDistrictRow({
   const [districts, setDistricts] = useState([]);
   const [districtsLoading, setDistrictsLoading] = useState(false);
   const [districtsError, setDistrictsError] = useState("");
+
+  const unmatchedDistrictNames = districts.length
+    ? districtNames.filter((name) =>
+      !districts.some((district) => normalizeDistrictValue(district.districtName) === normalizeDistrictValue(name))
+    )
+    : [];
 
   useEffect(() => {
     if (!stateCode) return undefined;
@@ -225,6 +242,9 @@ function StateDistrictRow({
               if (districts.length > 0 && selected.length === districts.length) {
                 return "All districts selected";
               }
+              if (selectedDistrictLabels.length > 0) {
+                return selectedDistrictLabels.join(", ");
+              }
               if (!selected.length) {
                 return districtsLoading ? "Loading districts..." : "Select one or more districts";
               }
@@ -254,6 +274,11 @@ function StateDistrictRow({
           <Typography role="status" sx={{ mt: 0.5, color: "#344457", fontSize: 11 }}>
             Selected districts: {selectedDistrictLabels.join(", ")}
           </Typography>
+        )}
+        {unmatchedDistrictNames.length > 0 && (
+          <FormHelperText error>
+            Saved districts not found for {stateName}: {unmatchedDistrictNames.join(", ")}. Verify the saved state and district mapping.
+          </FormHelperText>
         )}
       </FormField>
       {canRemove && (
@@ -472,36 +497,44 @@ function BasicInfoStep() {
               return {
                 stateCode: String(matchedState.stateCode),
                 stateName: state.stateName,
-                districtIds: (state.districts || []).map(String),
-                districtCodes: state.districts || [],
-                districtNames: state.districts || []
+                districtIds: [],
+                districtCodes: [],
+                districtNames: (state.districts || []).map(getSavedDistrictValue).filter(Boolean)
               };
             }
 
             const districtOptions = await districtResponse.json();
-            const matchedDistrictIds = (state.districts || [])
-              .map((districtName) => {
-                const matched = districtOptions.find(
-                  (d) => d.districtName && d.districtName.toLowerCase() === districtName.toLowerCase()
-                );
-                return matched ? String(matched.districtId) : districtName;
-              });
+            const savedDistrictValues = (state.districts || []).map(getSavedDistrictValue).filter(Boolean);
+            const matchedDistricts = savedDistrictValues
+              .map((savedValue) => districtOptions.find((district) => [
+                district.districtName,
+                district.districtCode,
+                district.districtId
+              ].some((optionValue) => normalizeDistrictValue(optionValue) === normalizeDistrictValue(savedValue))))
+              .filter(Boolean);
 
             return {
               stateCode: String(matchedState.stateCode),
               stateName: state.stateName,
-              districtIds: matchedDistrictIds,
-              districtCodes: matchedDistrictIds,
-              districtNames: state.districts || []
+              districtIds: matchedDistricts.map((district) => String(district.districtId)),
+              districtCodes: matchedDistricts.map((district) => String(district.districtCode)),
+              districtNames: savedDistrictValues.map((savedValue) => {
+                const matched = districtOptions.find((district) => [
+                  district.districtName,
+                  district.districtCode,
+                  district.districtId
+                ].some((optionValue) => normalizeDistrictValue(optionValue) === normalizeDistrictValue(savedValue)));
+                return matched?.districtName || savedValue;
+              })
             };
           } catch (error) {
             console.error(`Error fetching districts for ${matchedState.stateName}:`, error);
             return {
               stateCode: String(matchedState.stateCode),
               stateName: state.stateName,
-              districtIds: (state.districts || []).map(String),
-              districtCodes: state.districts || [],
-              districtNames: state.districts || []
+              districtIds: [],
+              districtCodes: [],
+              districtNames: (state.districts || []).map(getSavedDistrictValue).filter(Boolean)
             };
           }
         });

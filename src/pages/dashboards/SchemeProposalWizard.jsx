@@ -466,14 +466,21 @@ function SchemeProposalWizard() {
           nationalImportance: (values.nationalImportance || []).map((item) => item.description.trim()),
           internationalFootprints: (values.internationalFootprints || []).map((item) => item.description.trim())
         };
+        const formData = new FormData();
+        formData.append("request", JSON.stringify(payload));
+        (values.items || []).forEach((item) => {
+          const attachment = item.attachment?.[0];
+          if (attachment instanceof File) {
+            formData.append("file", attachment);
+          }
+        });
         const authorization = /^Bearer\s/i.test(accessToken) ? accessToken : `Bearer ${accessToken}`;
         const response = await fetch(apiUrls.misDeliverables(selectedSchemeId), {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: authorization
           },
-          body: JSON.stringify(payload)
+          body: formData
         });
         const responseText = await response.text();
         let result;

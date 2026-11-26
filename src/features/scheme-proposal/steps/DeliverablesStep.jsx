@@ -143,8 +143,8 @@ function parseDeliverablesWorksheet(rows, dateOfProposal, expectedCompletionDate
   return deliverables;
 }
 
-function fileName(value) {
-  return value?.[0]?.name || "";
+function fileName(value, savedFileName) {
+  return value?.[0]?.name || savedFileName || "";
 }
 
 function DeliverableRow({ item, index, register, getValues, dateOfProposal, expectedCompletionDate, errors, onRemove }) {
@@ -254,7 +254,7 @@ function DeliverableRow({ item, index, register, getValues, dateOfProposal, expe
             whiteSpace: "nowrap"
           }}
         >
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{fileName(item?.attachment) || "Choose File"}</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{fileName(item?.attachment, item?.documentFileName) || "Choose File"}</span>
           <input type="file" hidden {...register(`${baseName}.attachment`)} />
         </Button>
       </TableCell>
