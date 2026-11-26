@@ -43,11 +43,13 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-dom";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { apiUrls } from "../../api/urls";
 import { openProposalPdfPreview } from "../../api/proposalPdf";
 import { SuccessModal } from "../../components/ui";
 import CwlwStateHodPanel from "../../components/user-registration/CwlwStateHodPanel";
+import EcGbDecisionPage from "./EcGbDecisionPage";
 
 const drawerWidth = 256;
 const actionButtonSx = {
@@ -362,8 +364,15 @@ function NationalCampaProposalsTable({ refreshKey, latestStatusUpdate }) {
 
 function NationalCampaDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const [activeSection, setActiveSection] = useState(
+    location.pathname.endsWith("/ec-gb-decision")
+      ? "ecGbDecision"
+      : location.pathname.endsWith("/user-management")
+        ? "userManagement"
+        : "dashboard"
+  );
   const [decision, setDecision] = useState("forward");
   const [remarks, setRemarks] = useState("");
   const [decisionError, setDecisionError] = useState("");
@@ -375,9 +384,20 @@ function NationalCampaDashboard() {
   const schemeIdParam = searchParams.get("schemeId");
   const dashboardQuery = searchParams.toString();
   const dashboardUrl = dashboardQuery ? `/dashboard/nationalCampa?${dashboardQuery}` : "/dashboard/nationalCampa";
+  const ecGbDecisionUrl = dashboardQuery
+    ? `/dashboard/nationalCampa/ec-gb-decision?${dashboardQuery}`
+    : "/dashboard/nationalCampa/ec-gb-decision";
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const userEmail = sessionStorage.getItem("campaUserEmail");
+
+  useEffect(() => {
+    if (location.pathname.endsWith("/ec-gb-decision")) {
+      setActiveSection("ecGbDecision");
+    } else if (!location.pathname.endsWith("/user-management")) {
+      setActiveSection("dashboard");
+    }
+  }, [location.pathname]);
 
   const handleSubmitDecision = async (event) => {
     event.preventDefault();
@@ -477,6 +497,29 @@ function NationalCampaDashboard() {
           <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><DashboardOutlinedIcon fontSize="small" /></ListItemIcon>
           <ListItemText primary="User Management" slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }} />
         </ListItemButton>
+        <ListItemButton
+          component={RouterLink}
+          to={ecGbDecisionUrl}
+          selected={activeSection === "ecGbDecision"}
+          onClick={() => {
+            setActiveSection("ecGbDecision");
+            setMobileNavOpen(false);
+          }}
+          sx={{
+            mb: 0.5,
+            borderRadius: 1,
+            color: "#e4efe7",
+            "&.Mui-selected": { bgcolor: "#286347", color: "#fff" },
+            "&.Mui-selected:hover": { bgcolor: "#286347" },
+            "&:hover": { bgcolor: "#286347" }
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><GavelOutlinedIcon fontSize="small" /></ListItemIcon>
+          <ListItemText
+            primary="EC/GB Decision Entry"
+            slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }}
+          />
+        </ListItemButton>
       </List>
 
       <Box sx={{ flexGrow: 1 }} />
@@ -521,7 +564,11 @@ function NationalCampaDashboard() {
                 NATIONAL CAMPA
               </Typography>
               <Typography component="h1" sx={{ mt: 0.25, fontSize: 22, fontWeight: 700, lineHeight: 1.3 }}>
-                {activeSection === "dashboard" ? "Dashboard" : "User Management"}
+                {activeSection === "dashboard"
+                  ? "Dashboard"
+                  : activeSection === "ecGbDecision"
+                    ? "EC/GB Decision Entry"
+                    : "User Management"}
               </Typography>
             </Box>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
@@ -537,6 +584,9 @@ function NationalCampaDashboard() {
 
         <Container maxWidth="xl" sx={{ py: { xs: 2.5, md: 4 }, px: { xs: 2, md: 4 } }}>
           {activeSection === "userManagement" && <CwlwStateHodPanel />}
+          {activeSection === "ecGbDecision" && (
+            <EcGbDecisionPage schemeId={schemeIdParam} />
+          )}
           <Box
             sx={{
               display: activeSection === "dashboard" ? "grid" : "none",
