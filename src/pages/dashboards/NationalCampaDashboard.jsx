@@ -47,6 +47,7 @@ import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-d
 import { apiUrls } from "../../api/urls";
 import { openProposalPdfPreview } from "../../api/proposalPdf";
 import { SuccessModal } from "../../components/ui";
+import CwlwStateHodPanel from "../../components/user-registration/CwlwStateHodPanel";
 
 const drawerWidth = 256;
 const actionButtonSx = {
@@ -362,6 +363,7 @@ function NationalCampaProposalsTable({ refreshKey, latestStatusUpdate }) {
 function NationalCampaDashboard() {
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("dashboard");
   const [decision, setDecision] = useState("forward");
   const [remarks, setRemarks] = useState("");
   const [decisionError, setDecisionError] = useState("");
@@ -371,6 +373,8 @@ function NationalCampaDashboard() {
   const [latestStatusUpdate, setLatestStatusUpdate] = useState(null);
   const [searchParams] = useSearchParams();
   const schemeIdParam = searchParams.get("schemeId");
+  const dashboardQuery = searchParams.toString();
+  const dashboardUrl = dashboardQuery ? `/dashboard/nationalCampa?${dashboardQuery}` : "/dashboard/nationalCampa";
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const userEmail = sessionStorage.getItem("campaUserEmail");
@@ -451,13 +455,27 @@ function NationalCampaDashboard() {
       <List disablePadding>
         <ListItemButton
           component={RouterLink}
-          to="/dashboard/nationalCampa"
-          selected
-          onClick={() => setMobileNavOpen(false)}
+          to={dashboardUrl}
+          selected={activeSection === "dashboard"}
+          onClick={() => {
+            setActiveSection("dashboard");
+            setMobileNavOpen(false);
+          }}
           sx={{ mb: 0.5, borderRadius: 1, color: "#fff", "&.Mui-selected": { bgcolor: "#286347" }, "&.Mui-selected:hover": { bgcolor: "#286347" } }}
         >
           <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><DashboardOutlinedIcon fontSize="small" /></ListItemIcon>
           <ListItemText primary="Dashboard" slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }} />
+        </ListItemButton>
+        <ListItemButton
+          selected={activeSection === "userManagement"}
+          onClick={() => {
+            setActiveSection("userManagement");
+            setMobileNavOpen(false);
+          }}
+          sx={{ mb: 0.5, borderRadius: 1, color: "#e4efe7", "&.Mui-selected": { bgcolor: "#286347" }, "&.Mui-selected:hover": { bgcolor: "#286347" }, "&:hover": { bgcolor: "#286347" } }}
+        >
+          <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><DashboardOutlinedIcon fontSize="small" /></ListItemIcon>
+          <ListItemText primary="User Management" slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }} />
         </ListItemButton>
       </List>
 
@@ -503,7 +521,7 @@ function NationalCampaDashboard() {
                 NATIONAL CAMPA
               </Typography>
               <Typography component="h1" sx={{ mt: 0.25, fontSize: 22, fontWeight: 700, lineHeight: 1.3 }}>
-                Dashboard
+                {activeSection === "dashboard" ? "Dashboard" : "User Management"}
               </Typography>
             </Box>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
@@ -518,9 +536,10 @@ function NationalCampaDashboard() {
         </AppBar>
 
         <Container maxWidth="xl" sx={{ py: { xs: 2.5, md: 4 }, px: { xs: 2, md: 4 } }}>
+          {activeSection === "userManagement" && <CwlwStateHodPanel />}
           <Box
             sx={{
-              display: "grid",
+              display: activeSection === "dashboard" ? "grid" : "none",
               gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "minmax(0, 1fr) 320px" },
               alignItems: "stretch",
               gap: 2.5
