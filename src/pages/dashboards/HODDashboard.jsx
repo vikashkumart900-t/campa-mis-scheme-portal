@@ -108,23 +108,34 @@ function HODProposalsTable({ refreshKey, latestStatusUpdate }) {
 
         setLoading(true);
         const token = sessionStorage.getItem("campaJwt");
-        const response = await fetch(apiUrls.getListingProposalById(schemeId), {
+        const requestOptions = {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
           }
-        });
+        };
+        const [response, roleStatusResponse] = await Promise.all([
+          fetch(apiUrls.getListingProposalById(schemeId), requestOptions),
+          fetch(apiUrls.schemeRoleStatusById(schemeId), requestOptions)
+        ]);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch proposal: ${response.status}`);
         }
+        if (!roleStatusResponse.ok) {
+          throw new Error(`Failed to fetch proposal role status: ${roleStatusResponse.status}`);
+        }
 
-        const data = await response.json();
+        const [data, roleStatusData] = await Promise.all([response.json(), roleStatusResponse.json()]);
         const statusUpdate = latestStatusUpdate && String(latestStatusUpdate.schemeId) === String(data.schemeId)
           ? latestStatusUpdate
           : null;
-        const statusData = statusUpdate ? { ...data, ...statusUpdate } : data;
+        const statusData = {
+          ...data,
+          ...roleStatusData,
+          ...(statusUpdate || {})
+        };
         const proposal = {
           sno: 1,
           schemeId: data.schemeId,

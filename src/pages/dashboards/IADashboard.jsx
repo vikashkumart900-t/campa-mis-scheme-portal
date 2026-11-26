@@ -70,6 +70,24 @@ const getStatusDisplay = (campaStatus) => {
   return statusMap[campaStatus] || { label: campaStatus, color: "default" };
 };
 
+const formatSubmissionDate = (value) => {
+  if (!value) {
+    return "N/A";
+  }
+
+  const dateValue = String(value).slice(0, 10);
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(date);
+};
+
 function MyProposalsTable() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -97,23 +115,30 @@ function MyProposalsTable() {
 
         setLoading(true);
         const token = sessionStorage.getItem("campaJwt");
-        
-        const response = await fetch(apiUrls.getListingProposalById(schemeId), {
+        const requestOptions = {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
           }
-        });
+        };
+        const [response, roleStatusResponse] = await Promise.all([
+          fetch(apiUrls.getListingProposalById(schemeId), requestOptions),
+          fetch(apiUrls.schemeRoleStatusById(schemeId), requestOptions)
+        ]);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch proposal: ${response.status}`);
         }
+        if (!roleStatusResponse.ok) {
+          throw new Error(`Failed to fetch proposal role status: ${roleStatusResponse.status}`);
+        }
 
-        const data = await response.json();
+        const [data, roleStatusData] = await Promise.all([response.json(), roleStatusResponse.json()]);
         console.log("Proposal Data:", data);
+        const statusData = { ...data, ...roleStatusData };
 
-        const statusDisplay = getStatusDisplay(data.campaStatus);
+        const statusDisplay = getStatusDisplay(statusData.campaStatus);
         const mappedProposal = {
           sno: 1,
           schemeId: data.schemeId,
@@ -121,9 +146,12 @@ function MyProposalsTable() {
           proposalId: data.proposalId,
           schemeDuration: data.schemeDuration,
           proposedFinancialOutlay: data.proposedFinancialOutlay.toFixed(2),
-          campaStatus: data.campaStatus,
-          hodStatus: data.hodStatus,
-          pdStatus: data.pdStatus,
+          campaStatus: statusData.campaStatus,
+          campaUpdatedAt: statusData.campaUpdatedAt,
+          hodStatus: statusData.hodStatus,
+          hodUpdatedAt: statusData.hodUpdatedAt,
+          pdStatus: statusData.pdStatus,
+          pdUpdatedAt: statusData.pdUpdatedAt,
           status: statusDisplay.label,
           statusColor: statusDisplay.color
         };
@@ -377,7 +405,12 @@ function MyProposalsTable() {
         <DialogContent sx={{ pt: 3 }}>
           {selectedStatusProposal && (
             <Stack spacing={2}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 1.5, bgcolor: "#f9faf9", borderRadius: 1 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "minmax(90px, 1fr) auto minmax(90px, 1fr)", gap: 1, px: 1.5 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176" }}>Review Stage</Typography>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176" }}>Status</Typography>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#6a8176", textAlign: "right" }}>Last Action Date</Typography>
+              </Box>
+              <Box sx={{ display: "grid", gridTemplateColumns: "minmax(90px, 1fr) auto minmax(90px, 1fr)", gap: 1, alignItems: "center", p: 1.5, bgcolor: "#f9faf9", borderRadius: 1 }}>
                 <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#6a8176" }}>
                   CAMPA Status:
                 </Typography>
@@ -402,9 +435,12 @@ function MyProposalsTable() {
                           : "#c62828"
                   }}
                 />
+                <Typography sx={{ fontSize: 12, color: "#23332d", textAlign: "right" }}>
+                  {formatSubmissionDate(selectedStatusProposal.campaUpdatedAt)}
+                </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 1.5, bgcolor: "#f9faf9", borderRadius: 1 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "minmax(90px, 1fr) auto minmax(90px, 1fr)", gap: 1, alignItems: "center", p: 1.5, bgcolor: "#f9faf9", borderRadius: 1 }}>
                 <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#6a8176" }}>
                   HOD Status:
                 </Typography>
@@ -429,9 +465,12 @@ function MyProposalsTable() {
                           : "#c62828"
                   }}
                 />
+                <Typography sx={{ fontSize: 12, color: "#23332d", textAlign: "right" }}>
+                  {formatSubmissionDate(selectedStatusProposal.hodUpdatedAt)}
+                </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 1.5, bgcolor: "#f9faf9", borderRadius: 1 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "minmax(90px, 1fr) auto minmax(90px, 1fr)", gap: 1, alignItems: "center", p: 1.5, bgcolor: "#f9faf9", borderRadius: 1 }}>
                 <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#6a8176" }}>
                   PD Status:
                 </Typography>
@@ -456,6 +495,9 @@ function MyProposalsTable() {
                           : "#c62828"
                   }}
                 />
+                <Typography sx={{ fontSize: 12, color: "#23332d", textAlign: "right" }}>
+                  {formatSubmissionDate(selectedStatusProposal.pdUpdatedAt)}
+                </Typography>
               </Box>
 
               <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end", mt: 2 }}>
