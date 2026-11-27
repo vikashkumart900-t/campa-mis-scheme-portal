@@ -50,6 +50,7 @@ import { openProposalPdfPreview } from "../../api/proposalPdf";
 import { SuccessModal } from "../../components/ui";
 import CwlwStateHodPanel from "../../components/user-registration/CwlwStateHodPanel";
 import EcGbDecisionPage from "./EcGbDecisionPage";
+import FinalReviewApprovalPage from "./FinalReviewApprovalPage";
 
 const drawerWidth = 256;
 const actionButtonSx = {
@@ -366,13 +367,14 @@ function NationalCampaDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState(
-    location.pathname.endsWith("/ec-gb-decision")
-      ? "ecGbDecision"
-      : location.pathname.endsWith("/user-management")
+  const [userManagementOpen, setUserManagementOpen] = useState(false);
+  const activeSection = location.pathname.endsWith("/ec-gb-decision")
+    ? "ecGbDecision"
+    : location.pathname.endsWith("/final-review-approval")
+      ? "finalReview"
+      : userManagementOpen
         ? "userManagement"
-        : "dashboard"
-  );
+        : "dashboard";
   const [decision, setDecision] = useState("forward");
   const [remarks, setRemarks] = useState("");
   const [decisionError, setDecisionError] = useState("");
@@ -387,17 +389,12 @@ function NationalCampaDashboard() {
   const ecGbDecisionUrl = dashboardQuery
     ? `/dashboard/nationalCampa/ec-gb-decision?${dashboardQuery}`
     : "/dashboard/nationalCampa/ec-gb-decision";
+  const finalReviewApprovalUrl = dashboardQuery
+    ? `/dashboard/nationalCampa/final-review-approval?${dashboardQuery}`
+    : "/dashboard/nationalCampa/final-review-approval";
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const userEmail = sessionStorage.getItem("campaUserEmail");
-
-  useEffect(() => {
-    if (location.pathname.endsWith("/ec-gb-decision")) {
-      setActiveSection("ecGbDecision");
-    } else if (!location.pathname.endsWith("/user-management")) {
-      setActiveSection("dashboard");
-    }
-  }, [location.pathname]);
 
   const handleSubmitDecision = async (event) => {
     event.preventDefault();
@@ -478,7 +475,7 @@ function NationalCampaDashboard() {
           to={dashboardUrl}
           selected={activeSection === "dashboard"}
           onClick={() => {
-            setActiveSection("dashboard");
+            setUserManagementOpen(false);
             setMobileNavOpen(false);
           }}
           sx={{ mb: 0.5, borderRadius: 1, color: "#fff", "&.Mui-selected": { bgcolor: "#286347" }, "&.Mui-selected:hover": { bgcolor: "#286347" } }}
@@ -489,7 +486,7 @@ function NationalCampaDashboard() {
         <ListItemButton
           selected={activeSection === "userManagement"}
           onClick={() => {
-            setActiveSection("userManagement");
+            setUserManagementOpen(true);
             setMobileNavOpen(false);
           }}
           sx={{ mb: 0.5, borderRadius: 1, color: "#e4efe7", "&.Mui-selected": { bgcolor: "#286347" }, "&.Mui-selected:hover": { bgcolor: "#286347" }, "&:hover": { bgcolor: "#286347" } }}
@@ -502,7 +499,7 @@ function NationalCampaDashboard() {
           to={ecGbDecisionUrl}
           selected={activeSection === "ecGbDecision"}
           onClick={() => {
-            setActiveSection("ecGbDecision");
+            setUserManagementOpen(false);
             setMobileNavOpen(false);
           }}
           sx={{
@@ -517,6 +514,30 @@ function NationalCampaDashboard() {
           <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><GavelOutlinedIcon fontSize="small" /></ListItemIcon>
           <ListItemText
             primary="EC/GB Decision Entry"
+            slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }}
+          />
+        </ListItemButton>
+
+        <ListItemButton
+          component={RouterLink}
+          to={finalReviewApprovalUrl}
+          selected={activeSection === "finalReview"}
+          onClick={() => {
+            setUserManagementOpen(false);
+            setMobileNavOpen(false);
+          }}
+          sx={{
+            mb: 0.5,
+            borderRadius: 1,
+            color: "#e4efe7",
+            "&.Mui-selected": { bgcolor: "#286347", color: "#fff" },
+            "&.Mui-selected:hover": { bgcolor: "#286347" },
+            "&:hover": { bgcolor: "#286347" }
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><GavelOutlinedIcon fontSize="small" /></ListItemIcon>
+          <ListItemText
+            primary="Final Review and Approval"
             slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }}
           />
         </ListItemButton>
@@ -568,7 +589,9 @@ function NationalCampaDashboard() {
                   ? "Dashboard"
                   : activeSection === "ecGbDecision"
                     ? "EC/GB Decision Entry"
-                    : "User Management"}
+                    : activeSection === "finalReview"
+                      ? "Final Review and Approval"
+                      : "User Management"}
               </Typography>
             </Box>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
@@ -586,6 +609,9 @@ function NationalCampaDashboard() {
           {activeSection === "userManagement" && <CwlwStateHodPanel />}
           {activeSection === "ecGbDecision" && (
             <EcGbDecisionPage schemeId={schemeIdParam} />
+          )}
+          {activeSection === "finalReview" && (
+            <FinalReviewApprovalPage schemeId={schemeIdParam} />
           )}
           <Box
             sx={{

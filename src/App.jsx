@@ -287,6 +287,7 @@ function App() {
       <Route path="/dashboard/:userType/proposal/:projectId" element={<UserDashboard />} />
       <Route path="/dashboard/:userType/new-proposal" element={<UserDashboard />} />
       <Route path="/dashboard/:userType/ec-gb-decision" element={<UserDashboard />} />
+      <Route path="/dashboard/:userType/final-review-approval" element={<UserDashboard />} />
       <Route path="/dashboard/:userType" element={<UserDashboard />} />
       <Route path="/signin" element={<><Home /><Login /></>} />
       <Route path="/forgot-password" element={<><Home /><ForgotPassword /></>} />

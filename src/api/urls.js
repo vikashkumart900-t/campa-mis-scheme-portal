@@ -31,6 +31,7 @@ export const apiUrls = {
   documentDetails: (schemeId) => `${afterLoginBaseUrl}/document-details/${encodeURIComponent(schemeId)}`,
   bankDetails: (schemeId) => `${afterLoginBaseUrl}/bank-details/${encodeURIComponent(schemeId)}`,
   finalDocuments: (schemeId) => `${afterLoginBaseUrl}/final-documents/${encodeURIComponent(schemeId)}`,
+  gbDecision: (schemeId) => `${afterLoginBaseUrl}/gb-decision/${encodeURIComponent(schemeId)}`,
   getListingProposalById: (schemeId) => `${afterLoginBaseUrl}/getListingProposalById/${encodeURIComponent(schemeId)}`,
   schemeRoleStatusById: (schemeId) => `${afterLoginBaseUrl}/schemeRoleStatusByID/${encodeURIComponent(schemeId)}`,
   ///////////////////////////////////////
