@@ -44,13 +44,14 @@ import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { apiUrls } from "../../api/urls";
 import { openProposalPdfPreview } from "../../api/proposalPdf";
 import { SuccessModal } from "../../components/ui";
-import CwlwStateHodPanel from "../../components/user-registration/CwlwStateHodPanel";
 import EcGbDecisionPage from "./EcGbDecisionPage";
 import FinalReviewApprovalPage from "./FinalReviewApprovalPage";
+import ApprovalLetterPage from "./ApprovalLetterPage";
 
 const drawerWidth = 256;
 const actionButtonSx = {
@@ -372,9 +373,11 @@ function NationalCampaDashboard() {
     ? "ecGbDecision"
     : location.pathname.endsWith("/final-review-approval")
       ? "finalReview"
-      : userManagementOpen
-        ? "userManagement"
-        : "dashboard";
+      : location.pathname.endsWith("/approval-letter")
+        ? "approvalLetter"
+        : userManagementOpen
+          ? "userManagement"
+          : "dashboard";
   const [decision, setDecision] = useState("forward");
   const [remarks, setRemarks] = useState("");
   const [decisionError, setDecisionError] = useState("");
@@ -392,6 +395,9 @@ function NationalCampaDashboard() {
   const finalReviewApprovalUrl = dashboardQuery
     ? `/dashboard/nationalCampa/final-review-approval?${dashboardQuery}`
     : "/dashboard/nationalCampa/final-review-approval";
+  const approvalLetterUrl = dashboardQuery
+    ? `/dashboard/nationalCampa/approval-letter?${dashboardQuery}`
+    : "/dashboard/nationalCampa/approval-letter";
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const userEmail = sessionStorage.getItem("campaUserEmail");
@@ -541,6 +547,30 @@ function NationalCampaDashboard() {
             slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }}
           />
         </ListItemButton>
+
+        <ListItemButton
+          component={RouterLink}
+          to={approvalLetterUrl}
+          selected={activeSection === "approvalLetter"}
+          onClick={() => {
+            setUserManagementOpen(false);
+            setMobileNavOpen(false);
+          }}
+          sx={{
+            mb: 0.5,
+            borderRadius: 1,
+            color: "#e4efe7",
+            "&.Mui-selected": { bgcolor: "#286347", color: "#fff" },
+            "&.Mui-selected:hover": { bgcolor: "#286347" },
+            "&:hover": { bgcolor: "#286347" }
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}><DescriptionOutlinedIcon fontSize="small" /></ListItemIcon>
+          <ListItemText
+            primary="Approval Letter"
+            slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 600 } } }}
+          />
+        </ListItemButton>
       </List>
 
       <Box sx={{ flexGrow: 1 }} />
@@ -591,7 +621,9 @@ function NationalCampaDashboard() {
                     ? "EC/GB Decision Entry"
                     : activeSection === "finalReview"
                       ? "Final Review and Approval"
-                      : "User Management"}
+                      : activeSection === "approvalLetter"
+                        ? "Approval Letter"
+                        : "User Management"}
               </Typography>
             </Box>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
@@ -606,13 +638,18 @@ function NationalCampaDashboard() {
         </AppBar>
 
         <Container maxWidth="xl" sx={{ py: { xs: 2.5, md: 4 }, px: { xs: 2, md: 4 } }}>
-          {activeSection === "userManagement" && <CwlwStateHodPanel />}
+          {activeSection === "userManagement" && (
+            <Typography sx={{ color: "#23332d", fontSize: 14 }}>
+              User Management here
+            </Typography>
+          )}
           {activeSection === "ecGbDecision" && (
             <EcGbDecisionPage schemeId={schemeIdParam} />
           )}
           {activeSection === "finalReview" && (
             <FinalReviewApprovalPage schemeId={schemeIdParam} />
           )}
+          {activeSection === "approvalLetter" && <ApprovalLetterPage />}
           <Box
             sx={{
               display: activeSection === "dashboard" ? "grid" : "none",

@@ -20,6 +20,7 @@ export const apiUrls = {
   misGeneratePdf: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/generate-pdf`,
   misFinalDocuments: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/final-documents`,
   misEcGbDecision: (schemeId) => `${afterLoginBaseUrl}/ec-gb-decision/${encodeURIComponent(schemeId)}`,
+  registerStateHod: `${afterLoginBaseUrl}/register-stateHod`,
   updateRoleStatus: `${afterLoginBaseUrl}/updateRoleStatus`,
   nodalOfficer: `${afterLoginBaseUrl}/basic-info`,
   //get apis
@@ -32,6 +33,7 @@ export const apiUrls = {
   bankDetails: (schemeId) => `${afterLoginBaseUrl}/bank-details/${encodeURIComponent(schemeId)}`,
   finalDocuments: (schemeId) => `${afterLoginBaseUrl}/final-documents/${encodeURIComponent(schemeId)}`,
   gbDecision: (schemeId) => `${afterLoginBaseUrl}/gb-decision/${encodeURIComponent(schemeId)}`,
+  stateHodStatus: (schemeId) => `${afterLoginBaseUrl}/hod-status/${encodeURIComponent(schemeId)}`,
   getListingProposalById: (schemeId) => `${afterLoginBaseUrl}/getListingProposalById/${encodeURIComponent(schemeId)}`,
   schemeRoleStatusById: (schemeId) => `${afterLoginBaseUrl}/schemeRoleStatusByID/${encodeURIComponent(schemeId)}`,
   ///////////////////////////////////////

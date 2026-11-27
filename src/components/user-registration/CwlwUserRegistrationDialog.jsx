@@ -10,7 +10,7 @@ const initialForm = {
   password: ""
 };
 
-export default function CwlwUserRegistrationDialog({ open, onClose }) {
+export default function CwlwUserRegistrationDialog({ open, onClose, onRegistered, schemeId, stateCode }) {
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -34,14 +34,27 @@ export default function CwlwUserRegistrationDialog({ open, onClose }) {
     setSuccess("");
 
     try {
-      const response = await fetch(apiUrls.register, {
+      const numericSchemeId = Number(schemeId);
+      const accessToken = sessionStorage.getItem("campaJwt")?.trim();
+      if (!Number.isSafeInteger(numericSchemeId) || numericSchemeId <= 0 || !stateCode) {
+        throw new Error("A valid scheme ID and state code are required.");
+      }
+      if (!accessToken) {
+        throw new Error("Your session has expired. Please sign in again.");
+      }
+
+      const response = await fetch(apiUrls.registerStateHod, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          roleCode: "STATE_HOD",
+          schemeId: numericSchemeId,
+          stateCode: String(stateCode),
           fullName: form.name.trim(),
-          designation: form.designation.trim(),
           email: form.email.trim(),
+          designation: form.designation.trim(),
           mobile: form.mobile.trim(),
           password: form.password
         })
@@ -52,6 +65,8 @@ export default function CwlwUserRegistrationDialog({ open, onClose }) {
         throw new Error(message || `Request failed with status ${response.status}`);
       }
 
+      const registrationResult = await response.json();
+      onRegistered?.(registrationResult);
       setForm(initialForm);
       setSuccess("CWLW user registered successfully.");
     } catch (submitError) {
