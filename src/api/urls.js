@@ -19,6 +19,7 @@ export const apiUrls = {
   misBankDetails: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/bank-details`,
   misGeneratePdf: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/generate-pdf`,
   misFinalDocuments: (schemeId) => `${afterLoginBaseUrl}/${encodeURIComponent(schemeId)}/final-documents`,
+  misEcGbDecision: (schemeId) => `${afterLoginBaseUrl}/ec-gb-decision/${encodeURIComponent(schemeId)}`,
   updateRoleStatus: `${afterLoginBaseUrl}/updateRoleStatus`,
   nodalOfficer: `${afterLoginBaseUrl}/basic-info`,
   //get apis
